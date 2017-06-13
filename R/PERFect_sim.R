@@ -8,10 +8,15 @@ psmnorm<<-function(q, mean = 0, sd = 1, xi = 1.5){return(psnorm(q, mean = 0, sd 
 qsmnorm<<-function(p, mean = 0, sd = 1, xi = 1.5){return(qsnorm(p, mean = 0, sd = 1, xi = 1.5))}
 rsmnorm<<-function(n, mean = 0, sd = 1, xi = 1.5){return(rsnorm(n, mean = 0, sd = 1, xi = 1.5))}
 
+#available distributions: 
+#normal - "norm"
+#skew-normal - "sn"
+#non-central t - "t"
+#non-central beta - "cauchy"
 ######################################
 #Fit quantiles to the log data and get p-values
 ######################################
-PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("norm", "sn"),
+PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("norm", "sn", "t", "cauchy"),
                     alpha = 0.05,
                     col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
 
@@ -37,6 +42,9 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
     ggtitle("") + xlab("Filtering Loss") + ylab("Density")
   #estimate using normal 
   if(distr == "norm"){
+    if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
+                          print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")}
+    if(length(quant) < 2){stop("At least two quantile values must be specified."))}
     fit <- qmedist(lfl$DFL, distr, probs=quant)
     est <- fit$estimate
     #add density line to the plot
@@ -44,8 +52,35 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
     #calculate p-values
     pvals <- pnorm(q=lfl$DFL, mean = est[1], sd = est[2], lower.tail = FALSE, log.p = FALSE)
   }
+  #estimate using t-distribution 
+  if(distr == "t"){
+      if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
+                            print("Warning: more than 2 quantile values are given. \nLargest 2  quantiles are used.")}
+      if(length(quant) < 2){stop("At least 2 quantile value must be specified."))}
+    fit <- qmedist(lfl$DFL, distr, probs=quant, start=list(df=2, ncp = mean(lfl$DFL)))
+    est <- fit$estimate
+    #add density line to the plot
+    hist <- hist + stat_function(fun = dt, args = list(df =est[1],  ncp = est[2]), colour=linecol)
+    #calculate p-values
+    pvals <- pt(q=lfl$DFL,  df =est[1],  ncp = est[2],  lower.tail = FALSE, log.p = FALSE)
+  }
+    #estimate using cauchy distribution 
+    if(distr == "cauchy"){
+      if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
+                        print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")}
+      if(length(quant) < 2){stop("At least 2 quantile value must be specified."))}
+    fit <- qmedist(lfl$DFL, distr, probs=quant)
+    est <- fit$estimate
+    #add density line to the plot
+    hist <- hist + stat_function(fun = dcauchy, args = list(location = est[1],  scale= est[2]), colour=linecol)
+    #calculate p-values
+    pvals <- pcauchy(q=lfl$DFL,  location =est[1],  scale = est[2],  lower.tail = FALSE, log.p = FALSE)
+  }
   #estimate using skew normal 
   if(distr == "sn"){
+    if(length(quant) > 3){quant <- quant[(length(quant) - 2):length(quant)]
+                          print("Warning: more than 3 quantile values are given. \nLargest 3 quantiles are used.")}
+    if(length(quant) < 3){stop("At least 3 quantile values must be specified."))}
     lp <- list(xi = mean(lfl$DFL), omega = sd(lfl$DFL), alpha = 1.5)
     fit <- qmedist(lfl$DFL, distr, probs=quant, start=lp)
     est <- fit$estimate
