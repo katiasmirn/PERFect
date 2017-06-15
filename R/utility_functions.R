@@ -106,27 +106,3 @@ NCw_Order <- function(Counts){
   NCW <- names(NCW_val)
 }
 
-#Function to compare results of the four orderings
-OrderingComparison <-function(X, Order, res_perm, #next options are for recalculating simultaneous perfect
-                             nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn",
-                             quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue"){
-  
-  #calculate simultaneous PERFect
-  res_sim <- PERFect_sim(X=X,  Order=Order,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn",
-                                    quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
-  #recalculate p-values for the given order in permutation PERFect
-  res_perm <- PERFect_perm_reorder(X = X,  Order_alt=Order,  res_perm = res_perm, alpha = alpha, distr = distr)
-  #PERFect loss
-  PERFect_sim_taxa <- names(res_sim$filtX)
-  PERFect_perm_taxa <- names(res_perm$filtX)
-  #corresponding filtering loss
-  Loss_PERFect_sim <- FL_J(X = X, J = PERFect_sim_taxa, leave = TRUE)  
-  Loss_PERFect_perm <- FL_J(X = X, J = PERFect_perm_taxa, leave = TRUE)
-  
-  #table for the paper
-  Res <- cbind( rbind(length(PERFect_sim_taxa), length(PERFect_perm_taxa)), 
-                rbind(Loss_PERFect_sim, Loss_PERFect_perm))
-  colnames(Res) <- c("N_taxa", "FL")
-  rownames(Res) <- c("PERFect_sim", "PERFect_perm")
-  return(list(Res = Res,  res_sim = res_sim, res_perm = res_perm))
-}

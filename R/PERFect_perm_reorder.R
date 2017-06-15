@@ -2,7 +2,7 @@ PERFect_perm_reorder <- function(X,  Order_alt,  res_perm, alpha = 0.05, distr =
   
   X2 <- X
   X2 <- X2[,Order_alt]
-  Order_Ind <- rep(1:length(Order))#convert to numeric indicator values
+  Order_Ind <- rep(1:length(Order_alt))#convert to numeric indicator values
   DFL <- DiffFiltLoss(X = X2, Order_Ind, Plot = TRUE, Taxa_Names = Order_alt) 
   #re-evaluate p-values
   pvals <- rep(0, length(DFL$DFL))

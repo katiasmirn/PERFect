@@ -44,7 +44,7 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
   if(distr == "norm"){
     if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
                           print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")}
-    if(length(quant) < 2){stop("At least two quantile values must be specified."))}
+    if(length(quant) < 2){stop("At least two quantile values must be specified.")}
     fit <- qmedist(lfl$DFL, distr, probs=quant)
     est <- fit$estimate
     #add density line to the plot
@@ -56,7 +56,7 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
   if(distr == "t"){
       if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
                             print("Warning: more than 2 quantile values are given. \nLargest 2  quantiles are used.")}
-      if(length(quant) < 2){stop("At least 2 quantile value must be specified."))}
+      if(length(quant) < 2){stop("At least 2 quantile value must be specified.")}
     fit <- qmedist(lfl$DFL, distr, probs=quant, start=list(df=2, ncp = mean(lfl$DFL)))
     est <- fit$estimate
     #add density line to the plot
@@ -68,7 +68,7 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
     if(distr == "cauchy"){
       if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
                         print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")}
-      if(length(quant) < 2){stop("At least 2 quantile value must be specified."))}
+      if(length(quant) < 2){stop("At least 2 quantile value must be specified.")}
     fit <- qmedist(lfl$DFL, distr, probs=quant)
     est <- fit$estimate
     #add density line to the plot
@@ -80,7 +80,7 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
   if(distr == "sn"){
     if(length(quant) > 3){quant <- quant[(length(quant) - 2):length(quant)]
                           print("Warning: more than 3 quantile values are given. \nLargest 3 quantiles are used.")}
-    if(length(quant) < 3){stop("At least 3 quantile values must be specified."))}
+    if(length(quant) < 3){stop("At least 3 quantile values must be specified.")}
     lp <- list(xi = mean(lfl$DFL), omega = sd(lfl$DFL), alpha = 1.5)
     fit <- qmedist(lfl$DFL, distr, probs=quant, start=lp)
     est <- fit$estimate
