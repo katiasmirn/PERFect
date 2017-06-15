@@ -7,3 +7,4 @@ Author: Ekaterina Smirnova
 Maintainer: Ekaterina Smirnova <ekaterina.smirnova@mso.umt.edu>
 Description: PERFect is a  novel permutation filtering approach designed to address two unsolved problems in microbiome data processing: (i) define and  quantify loss due to filtering by implementing thresholds, and (ii) introduce and evaluate  a permutation  test for  filtering loss to provide a measure of excessive filtering.  Methods are assessed on two `mock' experiment data sets, where the true taxa compositions are known, and are applied to  a publicly available vaginal microbiome data set. The  method correctly removes contaminant  taxa in `mock'  data sets, quantifies and visualizes the corresponding filtering loss, and provides a uniform data-driven filtering criteria for real microbiome data sets.
 License: free
+Imports: Matrix, ggplot2, psych, sn, fitdistrplus

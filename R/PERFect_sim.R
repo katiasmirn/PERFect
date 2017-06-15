@@ -98,7 +98,7 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
   #if jth DFL is significant, then throw away all taxa 1:j 
   filtX <- X[,-(1:Ind)]
   
-  return(list(hist = hist, est = est, pvals = round(pvals,5), filtX = filtX, DFL = DFL$DFL, 
-              pDFL = DFL$p + ylab("Difference in Filtering Loss"),  fit=fit)) 
+  return(list(filtX = filtX, pvals = round(pvals,5), DFL = DFL$DFL, fit=fit, hist = hist, est = est,   
+              pDFL = DFL$p + ylab("Difference in Filtering Loss"))) 
 }
 
