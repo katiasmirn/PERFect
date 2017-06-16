@@ -78,6 +78,9 @@ res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "gree
 =======
 res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn",
                     quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
+<<<<<<< HEAD
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
+=======
 >>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
 
 #permutation perfect colored by FLu values

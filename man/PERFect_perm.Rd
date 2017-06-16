@@ -12,7 +12,11 @@ PERFect_perm(X, Order, quant = c(0.1, 0.25, 0.5), distr = "sn", alpha = 0.05, k 
 \arguments{
   \item{X}{OTU table, where taxa are columns and samples are rows of the table. Should be in data frame format with columns corresponding to taxa names.}
 <<<<<<< HEAD
+<<<<<<< HEAD
   \item{Order}{Taxa importance ordering according. We suggest using the simultaneous PERFEct p-values.}
+=======
+  \item{Order}{Taxa importance ordering according. We suggest using the number of occurrences of the taxa in the n samples NP.}
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
 =======
   \item{Order}{Taxa importance ordering according. We suggest using the number of occurrences of the taxa in the n samples NP.}
 >>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
@@ -75,8 +79,13 @@ Pres[Pres!=0]<-1
 Prop <- Counts/rowSums(Counts)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn", quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
 
+=======
+res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn",
+                    quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
 =======
 res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn",
                     quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
@@ -88,6 +97,10 @@ system.time(res_perm <- PERFect_perm(X=Prop,  Order=pvals_sim,   quant = c(0.1,0
                                      nbins =30, col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"))
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+save.image(file=paste(pathtoplots, "res_Data2.RData", sep=""))
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
 =======
 save.image(file=paste(pathtoplots, "res_Data2.RData", sep=""))
 >>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
@@ -96,15 +109,21 @@ save.image(file=paste(pathtoplots, "res_Data2.RData", sep=""))
 pvals_Plots(PERFect = res_perm, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 #calculate filtering loss due to removing these taxa
 Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_perm$filtX), leave = TRUE)
 =======
+=======
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
 #reorder
 res_reorder <- PERFect_perm_reorder(X=Prop,  Order_alt = NP,  res_perm = res_perm, alpha = 0.05, distr = "sn")
 
 #calculate filtering loss due to removing these taxa
 Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_reorder$filtX), leave = TRUE)
+<<<<<<< HEAD
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
+=======
 >>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
