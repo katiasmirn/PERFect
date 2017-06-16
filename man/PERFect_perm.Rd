@@ -1,149 +1,92 @@
 \name{PERFect_perm}
 \alias{PERFect_perm}
 %- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
+\title{Permutation PERFect filtering for microbiome data}
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Permutation filtering of the provided OTU table X at a test level alpha.  Each set of j taxa significance is evaluated by fitting the Skew-Normal, Normal, t or Cauchy distribution to the  sampling distribution obtained by permuted taxa labels.  
 }
 \usage{
 PERFect_perm(X, Order, quant = c(0.1, 0.25, 0.5), distr = "sn", alpha = 0.05, k = 10000, nbins = 30, col = "red", fill = "green", hist_fill = 0.2, linecol = "blue")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{X}{
-%%     ~~Describe \code{X} here~~
-}
-  \item{Order}{
-%%     ~~Describe \code{Order} here~~
-}
-  \item{quant}{
-%%     ~~Describe \code{quant} here~~
-}
-  \item{distr}{
-%%     ~~Describe \code{distr} here~~
-}
-  \item{alpha}{
-%%     ~~Describe \code{alpha} here~~
-}
-  \item{k}{
-%%     ~~Describe \code{k} here~~
-}
-  \item{nbins}{
-%%     ~~Describe \code{nbins} here~~
-}
-  \item{col}{
-%%     ~~Describe \code{col} here~~
-}
-  \item{fill}{
-%%     ~~Describe \code{fill} here~~
-}
-  \item{hist_fill}{
-%%     ~~Describe \code{hist_fill} here~~
-}
-  \item{linecol}{
-%%     ~~Describe \code{linecol} here~~
-}
+  \item{X}{OTU table, where taxa are columns and samples are rows of the table. Should be in data frame format with columns corresponding to taxa names.}
+  \item{Order}{Taxa importance ordering according. We suggest using the simultaneous PERFEct p-values.}
+  \item{quant}{Quantile values used to fit the distribution to log DFL values. The number of quantile values corresponds to the number of parameters in the distribution the data is fitted to. Assuming that at least 50\% of taxa  are not informative, we suggest fitting the  log Skew-Normal distribution by matching the  10\%, 25\% and 50\% percentiles of the log-transformed samples to the Skew-Normal distribution.}
+  \item{distr}{The type of distribution to fit log DFL values to. While we suggest using Skew-Normal distribution, and set as the defaul distribution, other  choices are available.
+  
+  "sn" -- Skew-Normal distribution with  3 parameters: location  xi, scale  omega^2 and shape alpha 
+  
+   "norm" -- Normal distribution with 2 parameters: mean  and standard deviation sd
+   
+   "t" -- Student t-distribution with 2 parameters: n degrees of freedom and noncentrality ncp
+   
+   "cauchy" -- Cauchy distribution with 2 parameters: location  and scale }
+  \item{alpha}{Test level alpha, set to 0.05 by default.}
+  \item{k}{The number of permutations}
+  \item{nbins}{Number of bins used to visualize the histogram  of log DFL values.}
+  \item{col}{Graphical parameter for  color of histogram bars border}
+  \item{fill}{Graphical parameter for color of histogram fill}
+  \item{hist_fill}{Graphical parameter for intensity of histogram fill}
+  \item{linecol}{Graphical parameter for the color of the fitted distribution density}
 }
 \details{
-%%  ~~ If necessary, more details than the description above ~~
+Filtering is the process of identifying and removing a subset of taxa  according to a particular criterion.  As opposed to the the simultaneous filtering approach, we do not assume that all distributions for each set of taxa  are identical and equal to the distribution of simultaneous filtering. Function PERFect_perm()  filters  the provided OTU table X and outputs a filtered table  that contains signal taxa.  PERFect_perm() calculates differences in filtering loss DFL for each taxon according to the given taxa order. By default, the function fits Skew-Normal distribution to the log-differences in filtering loss but Normal, t, or Cauchy distributions can be also used.
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  \item{filtX}{filtered OTU table}
+  \item{pvals}{p-values of the test}
+  \item{fit}{list of fitted values and further goodness of fit details passed from fitdistr() function for each set of taxa}
+  \item{hist}{list of histograms of log differences in filtering loss for each set of taxa}
+  \item{est}{estimated distribution parameters}
+  \item{dfl_distr}{plot of differences in filtering loss values}
 }
 \references{
-%% ~put references to the literature/web site here ~
+Azzalini, A. (2005). The skew-normal distribution and related multivariate families. Scandinavian Journal of Statistics, 32(2), 159–188.
 }
 \author{
-%%  ~~who you are~~
+Ekaterina Smirnova
 }
-\note{
+%\note{
 %%  ~~further notes~~
-}
+%}
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+See Also as\code{\link{PERFect_sim}}
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
+Prop <- mock2$Prop
+Counts <- mock2$Counts
+#arrange counts in order of increasing number of samples taxa are present in 
+NP <- NP_Order(Counts)
+Counts <- Counts[,NP]
 
-## The function is currently defined as
-function (X, Order, quant = c(0.1, 0.25, 0.5), distr = "sn", 
-    alpha = 0.05, k = 10000, nbins = 30, col = "red", fill = "green", 
-    hist_fill = 0.2, linecol = "blue") 
-{
-    p <- dim(X)[2]
-    pvals <- rep(0, p - 1)
-    hist_list <- lapply(1:(p - 1), function(x) NULL)
-    est_list <- list()
-    fit_list <- list()
-    X <- X[, Order]
-    Order_Ind <- rep(1:length(Order))
-    DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order)
-    names(pvals) <- names(DFL$DFL)
-    dfl_distr <- sampl_distr(X = Prop, k = k)
-    for (i in 1:(p - 1)) {
-        lfl <- data.frame(log(dfl_distr[[i]][!dfl_distr[[i]] == 
-            0]))
-        if (length(dfl_distr[[i]][dfl_distr[[i]] == 0]) > 0) {
-            print(paste("taxon", i, "number of zeroes = ", length(dfl_distr[[i]][dfl_distr[[i]] == 
-                0])))
-        }
-        names(lfl) <- c("DFL")
-        x = "DFL"
-        ord_map = aes_string(x = x)
-        hist <- ggplot(lfl, ord_map) + geom_histogram(bins = nbins, 
-            aes(y = ..density..), col = col, fill = fill, alpha = hist_fill) + 
-            theme(panel.background = element_rect(fill = "white"), 
-                panel.grid.major = element_line(colour = "grey90"), 
-                axis.text.x = element_text(size = 10)) + ggtitle("") + 
-            xlab("Filtering Loss") + ylab("Density")
-        if (distr == "norm") {
-            fit <- qmedist(lfl$DFL, distr, probs = quant)
-            est <- fit$estimate
-            hist <- hist + stat_function(fun = dnorm, args = list(mean = est[1], 
-                sd = est[2]), colour = linecol)
-            hist_list[[i]] <- hist
-            pvals[i] <- pnorm(q = log(DFL$DFL[i]), mean = est[1], 
-                sd = est[2], lower.tail = FALSE, log.p = FALSE)
-        }
-        if (distr == "sn") {
-            lp <- list(xi = mean(lfl$DFL), omega = sd(lfl$DFL), 
-                alpha = 1.5)
-            fit <- qmedist(lfl$DFL, distr, probs = quant, start = lp)
-            est <- fit$estimate
-            hist <- hist + stat_function(fun = dsn, args = list(xi = est[1], 
-                omega = est[2], alpha = est[3]), colour = linecol)
-            hist_list[[i]] <- hist
-            pvals[i] <- 1 - psn(x = log(DFL$DFL[i]), xi = est[1], 
-                omega = est[2], alpha = est[3])
-        }
-        est_list[[i]] <- est
-        fit_list[[i]] <- fit
-    }
-    Ind <- which(pvals <= alpha)
-    if (length(Ind != 0)) {
-        Ind <- min(Ind)
-    }
-    else {
-        Ind <- dim(X)[2] - 1
-        warning("no taxa are significant at a specified alpha level")
-    }
-    filtX <- X[, -(1:Ind)]
-    return(list(hist = hist_list, est = est_list, pvals = pvals, 
-        filtX = filtX, dfl_distr = dfl_distr, fit = fit_list))
-  }
+#Presence absence data matrix
+Pres <- Counts
+Pres[Pres!=0]<-1
+
+#Proportions  data matrix
+Prop <- Counts/rowSums(Counts)
+
+res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn", quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
+
+#order according to p-values
+pvals_sim <- pvals_Order(Counts, res_sim)
+system.time(res_perm <- PERFect_perm(X=Prop,  Order=pvals_sim,   quant = c(0.1,0.25, 0.5), distr = "sn",
+                                     alpha = 0.05, k = 10000, 
+                                     nbins =30, col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"))
+
+
+#permutation perfect colored by FLu values
+pvals_Plots(PERFect = res_perm, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
+
+
+#calculate filtering loss due to removing these taxa
+Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_perm$filtX), leave = TRUE)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+%\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
+%\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
