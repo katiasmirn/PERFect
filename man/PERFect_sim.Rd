@@ -73,7 +73,12 @@ Pres[Pres!=0]<-1
 #Proportions  data matrix
 Prop <- Counts/rowSums(Counts)
 
+<<<<<<< HEAD
 res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn", quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
+=======
+res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn",
+                    quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
 
 #permutation perfect colored by FLu values
 pvals_Plots(PERFect = res_sim, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)

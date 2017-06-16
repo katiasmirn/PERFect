@@ -11,7 +11,11 @@ PERFect_perm(X, Order, quant = c(0.1, 0.25, 0.5), distr = "sn", alpha = 0.05, k 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{X}{OTU table, where taxa are columns and samples are rows of the table. Should be in data frame format with columns corresponding to taxa names.}
+<<<<<<< HEAD
   \item{Order}{Taxa importance ordering according. We suggest using the simultaneous PERFEct p-values.}
+=======
+  \item{Order}{Taxa importance ordering according. We suggest using the number of occurrences of the taxa in the n samples NP.}
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
   \item{quant}{Quantile values used to fit the distribution to log DFL values. The number of quantile values corresponds to the number of parameters in the distribution the data is fitted to. Assuming that at least 50\% of taxa  are not informative, we suggest fitting the  log Skew-Normal distribution by matching the  10\%, 25\% and 50\% percentiles of the log-transformed samples to the Skew-Normal distribution.}
   \item{distr}{The type of distribution to fit log DFL values to. While we suggest using Skew-Normal distribution, and set as the defaul distribution, other  choices are available.
   
@@ -70,21 +74,38 @@ Pres[Pres!=0]<-1
 #Proportions  data matrix
 Prop <- Counts/rowSums(Counts)
 
+<<<<<<< HEAD
 res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn", quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
 
+=======
+res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn",
+                    quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
 #order according to p-values
 pvals_sim <- pvals_Order(Counts, res_sim)
 system.time(res_perm <- PERFect_perm(X=Prop,  Order=pvals_sim,   quant = c(0.1,0.25, 0.5), distr = "sn",
                                      alpha = 0.05, k = 10000, 
                                      nbins =30, col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"))
 
+<<<<<<< HEAD
+=======
+save.image(file=paste(pathtoplots, "res_Data2.RData", sep=""))
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
 
 #permutation perfect colored by FLu values
 pvals_Plots(PERFect = res_perm, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
 
+<<<<<<< HEAD
 
 #calculate filtering loss due to removing these taxa
 Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_perm$filtX), leave = TRUE)
+=======
+#reorder
+res_reorder <- PERFect_perm_reorder(X=Prop,  Order_alt = NP,  res_perm = res_perm, alpha = 0.05, distr = "sn")
+
+#calculate filtering loss due to removing these taxa
+Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_reorder$filtX), leave = TRUE)
+>>>>>>> 25e9a1581038f99bd5b23906c7a396f9522b3c00
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
