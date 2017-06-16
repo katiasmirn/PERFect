@@ -84,6 +84,7 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
        warning("no taxa are significant at a specified alpha level")}
   #if jth DFL is significant, then throw away all taxa 1:j 
   filtX <- X[,-(1:Ind)]
-  return(list(hist = hist_list, est =est_list, pvals = pvals, filtX = filtX, dfl_distr=dfl_distr, fit = fit_list ))
+  return(list(filtX = filtX, pvals = pvals, fit = fit_list, hist = hist_list, 
+              est =est_list,   dfl_distr=dfl_distr ))
 }
 
