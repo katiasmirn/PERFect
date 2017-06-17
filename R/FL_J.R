@@ -1,10 +1,9 @@
 ##################################
 #Calculate FL for taxa left in the set
 #################################
-FL_J <- function(X, J, leave = TRUE){
+FL_J <- function(X, J){
   Ind <- which(names(X) %in%  J)
-  if(leave == TRUE){X_R <- X[,Ind]}
-  else{X_R <- X[,-Ind]}
+  X_R <- X[,Ind]
   #calculate corresponding norm
   Netw <- t(as.matrix(X))%*%as.matrix(X)
   Netw_R <- t(as.matrix(X_R))%*%as.matrix(X_R)

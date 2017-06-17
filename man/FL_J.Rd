@@ -2,73 +2,68 @@
 \alias{FL_J}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-%%  ~~function to do ... ~~
+Filtering Loss for a set of filtered taxa J
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+This function calculates filtering loss for the candidate set J of filtered out taxa 
 }
 \usage{
-FL_J(X, J, leave = TRUE)
+FL_J(X, J)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{X}{
-%%     ~~Describe \code{X} here~~
+An n x p OTU table, where p taxa are columns and n samples are rows of the table. Should be in data frame format with columns corresponding to taxa names.
 }
   \item{J}{
-%%     ~~Describe \code{J} here~~
+The set J of filtered out taxa, which must be subset of column names of X.
 }
-  \item{leave}{
-%%     ~~Describe \code{leave} here~~
+
 }
-}
-\details{
+%\details{
 %%  ~~ If necessary, more details than the description above ~~
-}
+%}
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  \item{FL}{Filtering loss value}
 }
 \references{
-%% ~put references to the literature/web site here ~
+Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
 }
 \author{
-%%  ~~who you are~~
+Ekaterina Smirnova
 }
-\note{
+%\note{
 %%  ~~further notes~~
-}
+%}
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+See Also as \code{\link{FiltLoss}}
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
+Prop <- mock2$Prop
+Counts <- mock2$Counts
+#arrange counts in order of increasing number of samples taxa are present in 
+NP <- NP_Order(Counts)
+Counts <- Counts[,NP]
 
-## The function is currently defined as
-function (X, J, leave = TRUE) 
-{
-    Ind <- which(names(X) \%in\% J)
-    if (leave == TRUE) {
-        X_R <- X[, Ind]
-    }
-    else {
-        X_R <- X[, -Ind]
-    }
-    Netw <- t(as.matrix(X)) \%*\% as.matrix(X)
-    Netw_R <- t(as.matrix(X_R)) \%*\% as.matrix(X_R)
-    FL <- 1 - tr(t(Netw_R) \%*\% Netw_R)/tr(t(Netw) \%*\% Netw)
-    return(FL)
-  }
+#Presence absence data matrix
+Pres <- Counts
+Pres[Pres!=0]<-1
+
+#Proportions  data matrix
+Prop <- Counts/rowSums(Counts)
+
+res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn", quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
+
+#permutation perfect colored by FLu values
+pvals_Plots(PERFect = res_sim, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
+
+#calculate filtering loss due to removing these taxa
+Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_reorder$filtX))
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+%\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
+%\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

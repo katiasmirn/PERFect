@@ -2,10 +2,10 @@
 \alias{FiltLoss}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-%%  ~~function to do ... ~~
+Filtering Loss
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Sequential filtering loss calculation for removing a set of J_j taxa for J= 1, ..., p.
 }
 \usage{
 FiltLoss(X, Order, type = c("Ind", "Cum"), Plot = TRUE)
@@ -13,85 +13,69 @@ FiltLoss(X, Order, type = c("Ind", "Cum"), Plot = TRUE)
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{X}{
-%%     ~~Describe \code{X} here~~
+An n x p OTU table, where p taxa are columns and n samples are rows of the table. Should be in data frame format with columns corresponding to taxa names.
 }
   \item{Order}{
-%%     ~~Describe \code{Order} here~~
+Taxa column order  corresponding to taxa importance arrangment. Can be either character vector corresponding to taxa names recorded in column names of X or a numeric vector with  column indices.
 }
   \item{type}{
-%%     ~~Describe \code{type} here~~
+Type of filtering loss calculation. 
+
+"Ind" -- individual taxon's filtering loss FL_u(j)
+
+"Cum" -- cumulative filtering loss FL(J) due to removing a set of taxa J
 }
   \item{Plot}{
-%%     ~~Describe \code{Plot} here~~
+A binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss.
 }
 }
 \details{
-%%  ~~ If necessary, more details than the description above ~~
+The individual filtering loss due to removing one taxon j is defined as 
+
+FL_u(j)= 1- (||X^T_{-j} X_{-j}||_F^2/||X^TX||_F^2),
+
+where X_{-j} is the matrix X without column corresponding to jth taxon and ||Z||_F is the Frobenious norm of a matrix Z.
+
+The cumulative filtering loss due to removing a set of taxa 
+
+FL(J)= 1- ({||X^T_{-J}  X_{-J}||_F^2\||X^TX||_F^2),
+
+where X_{-J} is the n x (p-|J|) dimensional matrix obtained by removing the columns indexed by the set J from the data matrix X.
+
+The cumulative filtering loss is calculated sequentially for each set of taxa J_j, j=1, ..., p.
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  \item{FL}{Description of 'comp1'}
+ \item{p_FL}{Description of 'comp2'}
 }
 \references{
-%% ~put references to the literature/web site here ~
+Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
 }
 \author{
-%%  ~~who you are~~
+Ekaterina Smirnova
 }
-\note{
+%\note{
 %%  ~~further notes~~
-}
+%}
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+See Also as \code{\link{DiffFiltLoss}}
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (X, Order, type = c("Ind", "Cum"), Plot = TRUE) 
-{
-    p <- dim(X)[2]
-    Norm_Ratio <- rep(1, p)
-    X <- as.matrix(X)
-    X <- X[, Order]
-    Order_Ind <- 1:length(Order)
-    Netw <- t(X) \%*\% X
-    for (i in 1:p) {
-        if (type == "Cum") {
-            Ind <- Order_Ind[-(1:i)]
-        }
-        else {
-            Ind <- Order_Ind[-i]
-        }
-        Netw_R <- Netw[Ind, Ind]
-        Norm_Ratio[i] <- tr(t(Netw_R) \%*\% Netw_R)
-    }
-    FL <- 1 - Norm_Ratio/tr(t(Netw) \%*\% Netw)
-    if (Plot == TRUE) {
-        df <- data.frame(Order, rep(1:length(FL)), FL)
-        names(df)[2] <- "x"
-        Lab <- 1:length(Order)
-        df <- cbind(Lab, df)
-        p_FL <- ggplot(df) + geom_line(aes(x = Lab, y = FL, group = 1), 
-            colour = "dodgerblue3") + theme(panel.background = element_rect(fill = "white"), 
-            panel.grid.major = element_line(colour = "grey90"), 
-            axis.text.x = element_text(size = 10, colour = "black", 
-                angle = 90, hjust = 1)) + ggtitle("") + ylab("Filtering Loss") + 
-            xlab("Taxa") + xlim(0, max(df$Lab))
-    }
-    names(FL) <- colnames(X)
-    return(list(FL = FL, p_FL = p_FL))
-  }
+Prop <- mock2$Prop
+Counts <- mock2$Counts
+#arrange counts in order of increasing number of samples taxa are present in 
+NP <- NP_Order(Counts)
+#Calculate cumulative filtering loss
+FL <- FiltLoss(X=Prop, Order = Order, type = "Cum", Plot = TRUE)
+#Differences in filtering loss values
+FL$FL
+#Plot of the differences in filtering loss
+FL$p_FL
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+%\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
+%\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

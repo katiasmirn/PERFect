@@ -90,7 +90,7 @@ pvals_Plots(PERFect = res_perm, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
 
 
 #calculate filtering loss due to removing these taxa
-Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_perm$filtX), leave = TRUE)
+Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_perm$filtX))
 
 
 }

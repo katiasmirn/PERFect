@@ -2,10 +2,10 @@
 \alias{DiffFiltLoss}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-%%  ~~function to do ... ~~
+Difference in filtering loss
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+This function calculates differences in filtering loss due to removing a set of J taxa sequentially
 }
 \usage{
 DiffFiltLoss(X, Order_Ind, Plot = TRUE, Taxa_Names = NULL)
@@ -13,78 +13,55 @@ DiffFiltLoss(X, Order_Ind, Plot = TRUE, Taxa_Names = NULL)
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{X}{
-%%     ~~Describe \code{X} here~~
+OTU table, where taxa are columns and samples are rows of the table. Should be in data frame format with columns corresponding to taxa names.
 }
   \item{Order_Ind}{
-%%     ~~Describe \code{Order_Ind} here~~
+Numeric column order corresponding to taxa importance arrangment
 }
   \item{Plot}{
-%%     ~~Describe \code{Plot} here~~
+A binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss. 
 }
   \item{Taxa_Names}{
-%%     ~~Describe \code{Taxa_Names} here~~
+Optional taxa labels corresponding to the columns ordering given by Order_Ind
 }
 }
 \details{
-%%  ~~ If necessary, more details than the description above ~~
+This function calculates and plots (if Plot = TRUE) differences in filtering loss sequentially  for removing the first j taxa as DFL(j+1) = FL(J_{j+1}) - FL(J_j) for taxa j=1, ..., p. 
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  \item{DFL = DFL}{Differences in filtering loss values}
+  \item{p_FL= p_FL}{Plot of the differences in filtering loss}
+
 }
 \references{
-%% ~put references to the literature/web site here ~
+Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
 }
 \author{
-%%  ~~who you are~~
+Ekaterina Smirnova
 }
-\note{
+%\note{
 %%  ~~further notes~~
-}
+%}
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+See Also as \code{\link{FiltLoss}}
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (X, Order_Ind, Plot = TRUE, Taxa_Names = NULL) 
-{
-    p <- dim(X)[2]
-    DFL <- rep(1, p - 1)
-    X <- as.matrix(X)
-    Netw <- t(X) \%*\% X
-    for (j in 1:(p - 1)) {
-        DFL[j] <- DiffFiltLoss_j(Order_Ind, Netw, j)
-    }
-    DFL <- DFL/tr(t(Netw) \%*\% Netw)
-    if (Plot == TRUE) {
-        df <- data.frame(Order_Ind[-1], rep(1:length(DFL)), DFL)
-        names(df)[2] <- "x"
-        Lab <- 1:length(Order_Ind[-1])
-        df <- cbind(Lab, df)
-        p_FL <- ggplot(df) + geom_line(aes(x = Lab, y = DFL, 
-            group = 1), colour = "dodgerblue3") + theme(panel.background = element_rect(fill = "white"), 
-            panel.grid.major = element_line(colour = "grey90"), 
-            axis.text.x = element_text(size = 10, colour = "black", 
-                angle = 90, hjust = 1)) + ggtitle("") + ylab("Differences in Filtering Loss") + 
-            xlab("Taxa") + xlim(0, max(df$Lab))
-    }
-    if (!is.null(Taxa_Names)) {
-        names(DFL) <- Taxa_Names[-1]
-    }
-    return(list(DFL = DFL, p_FL = p_FL))
-  }
+Prop <- mock2$Prop
+Counts <- mock2$Counts
+#arrange counts in order of increasing number of samples taxa are present in 
+NP <- NP_Order(Counts)
+#obtain numeric column order corresponding to taxa importance arrangment
+Order_Ind <- match(names(Prop, NP))
+DFL <- DiffFiltLoss(X=Prop, Order_Ind = Order_Ind, Plot = TRUE, Taxa_Names = NP)
+#Differences in filtering loss values
+DFL$DFL
+#Plot of the differences in filtering loss
+DFL$p_FL
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+%\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
+%\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

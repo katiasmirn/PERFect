@@ -32,7 +32,7 @@ PERFect_sim(X, Order, nbins = 30, quant = c(0.25, 0.5), distr = c("sn", "norm","
   \item{linecol}{Graphical parameter for the color of the fitted distribution density}
 }
 \details{
-Filtering is the process of identifying and removing a subset of taxa  according to a particular criterion.  Function PERFect_sim()  filters  the provided OTU table X and outputs a filtered table  that contains signal taxa.  PERFect_sim() calculates differences in filtering loss DFL for each taxon according to the given taxa order. By default, the function fits Skew-Normal distribution to the log-differences in filtering loss but Normal, t, or Cauchy distributions can be also used.
+Filtering is the process of identifying and removing a subset of taxa  according to a particular criterion.  Function PERFect_sim()  filters  the provided OTU table X and outputs a filtered table  that contains signal taxa.  PERFect_sim() calculates differences in filtering loss DFL for each taxon according to the given taxa order. By default, the function fits Skew-Normal distribution to the log-differences in filtering loss but Normal, t, or Cauchy distributions can be also used. This is implementation of Algorithm 1 described in Smirnova et al. 
 }
 \value{
   \item{filtX }{filtered OTU table}
@@ -46,6 +46,8 @@ Filtering is the process of identifying and removing a subset of taxa  according
 
 \references{
 Azzalini, A. (2005). The skew-normal distribution and related multivariate families. Scandinavian Journal of Statistics, 32(2), 159–188.
+
+Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
 }
 \author{
 Ekaterina Smirnova
@@ -75,12 +77,11 @@ Prop <- Counts/rowSums(Counts)
 
 res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn", quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
 
-
 #permutation perfect colored by FLu values
 pvals_Plots(PERFect = res_sim, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
 
 #calculate filtering loss due to removing these taxa
-Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_reorder$filtX), leave = TRUE)
+Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_reorder$filtX))
 
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
