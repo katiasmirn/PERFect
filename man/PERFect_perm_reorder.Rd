@@ -44,7 +44,7 @@ Ekaterina Smirnova
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-See Also as \code{\link{PERFect_perm}}, ~~~
+See Also as \code{\link{PERFect_perm}}
 }
 \examples{
 Prop <- mock2$Prop

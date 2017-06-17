@@ -48,6 +48,8 @@ Filtering is the process of identifying and removing a subset of taxa  according
 }
 \references{
 Azzalini, A. (2005). The skew-normal distribution and related multivariate families. Scandinavian Journal of Statistics, 32(2), 159–188.
+
+Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
 }
 \author{
 Ekaterina Smirnova
@@ -75,8 +77,6 @@ Pres[Pres!=0]<-1
 #Proportions  data matrix
 Prop <- Counts/rowSums(Counts)
 
-<<<<<<< HEAD
-
 res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn", quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
 
 #order according to p-values
@@ -91,7 +91,6 @@ pvals_Plots(PERFect = res_perm, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
 
 #calculate filtering loss due to removing these taxa
 Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_perm$filtX))
-
 
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

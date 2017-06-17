@@ -2,58 +2,48 @@
 \alias{NP_Order}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-%%  ~~function to do ... ~~
+Taxa importance ordering by the number of occurrences of the taxa in the n samples
 }
-\description{
+%\description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+%}
 \usage{
 NP_Order(Counts)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{Counts}{
-%%     ~~Describe \code{Counts} here~~
+OTU COUNTS table, where taxa are columns and samples are rows of the table. Should be in data frame format with columns corresponding to taxa names. Must be a data frame, where taxa are column names. 
 }
 }
-\details{
+%\details{
 %%  ~~ If necessary, more details than the description above ~~
-}
+%}
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+ \item{NP}{Taxa names in increasing  order of the number of samples taxa are present in}
 }
 \references{
-%% ~put references to the literature/web site here ~
+Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
 }
-\author{
+%\author{
 %%  ~~who you are~~
-}
-\note{
+%}
+%\note{
 %%  ~~further notes~~
-}
+%}
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
+%\seealso{
+%See Also as \code{\link{help}}, ~~~
+%}
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (Counts) 
-{
-    Order <- names(sort(apply(Counts, 2, nnzero)))
-    return(Order)
-  }
+Prop <- mock2$Prop
+Counts <- mock2$Counts
+#arrange counts in order of increasing number of samples taxa are present in 
+NP <- NP_Order(Counts)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+%\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
+%\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

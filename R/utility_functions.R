@@ -71,8 +71,8 @@ ResultsComparison <-function(X, Counts,Ab_min = 0.001,rel =FALSE, thresh=5,prop 
 ####################
 NP_Order <- function(Counts){
   #arrange counts in order of increasing number of samples taxa are present in 
-  Order <- names(sort(apply(Counts, 2, nnzero)))
-  return(Order)
+  NP <- names(sort(apply(Counts, 2, nnzero)))
+  return(NP)
 }
 
 pvals_Order <- function(Counts, res_sim){
