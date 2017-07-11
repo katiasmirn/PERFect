@@ -64,6 +64,7 @@ Ekaterina Smirnova
 See Also as\code{\link{PERFect_sim}}
 }
 \examples{
+data(mock2)
 Prop <- mock2$Prop
 Counts <- mock2$Counts
 #arrange counts in order of increasing number of samples taxa are present in 

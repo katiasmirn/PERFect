@@ -7,6 +7,11 @@ Main functions:
 PERFect_sim — simultaneous PERFect filtering algorithm 
 PERFect_perm — permutation PERFect filtering algorithm
 
-Algorithms are described in 
+Data sets:
+data(mock2)
+data(ravel)
+
+Algorithms and data are described in: 
 
 Smirnova, E., Huzurbazar, H., Jafari, F. “PERFect: permutation filtration of microbiome data", under review.
+

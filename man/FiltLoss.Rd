@@ -45,8 +45,8 @@ where X_{-J} is the n x (p-|J|) dimensional matrix obtained by removing the colu
 The cumulative filtering loss is calculated sequentially for each set of taxa J_j, j=1, ..., p.
 }
 \value{
-  \item{FL}{Description of 'comp1'}
- \item{p_FL}{Description of 'comp2'}
+  \item{FL}{Filtering loss values}
+ \item{p_FL}{Plot of filtering loss values}
 }
 \references{
 Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
@@ -64,6 +64,7 @@ Ekaterina Smirnova
 See Also as \code{\link{DiffFiltLoss}}
 }
 \examples{
+data(mock2)
 Prop <- mock2$Prop
 Counts <- mock2$Counts
 #arrange counts in order of increasing number of samples taxa are present in 
