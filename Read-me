@@ -1,0 +1,12 @@
+To install PERFect package use:
+
+library(devtools)
+install_github("katiasmirn/PERFect”)
+
+Main functions: 
+PERFect_sim — simultaneous PERFect filtering algorithm 
+PERFect_perm — permutation PERFect filtering algorithm
+
+Algorithms are described in 
+
+Smirnova, E., Huzurbazar, H., Jafari, F. “PERFect: permutation filtration of microbiome data", under review.
