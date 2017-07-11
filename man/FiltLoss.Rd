@@ -38,7 +38,7 @@ where X_{-j} is the matrix X without column corresponding to jth taxon and ||Z||
 
 The cumulative filtering loss due to removing a set of taxa 
 
-FL(J)= 1- ({||X^T_{-J}  X_{-J}||_F^2\||X^TX||_F^2),
+FL(J)= 1- (||X^T_{-J}  X_{-J}||_F^2\||X^TX||_F^2),
 
 where X_{-J} is the n x (p-|J|) dimensional matrix obtained by removing the columns indexed by the set J from the data matrix X.
 
