@@ -48,19 +48,11 @@ DiffFiltLoss_j(Perm_Order, Netw, j)
 %% ~~objects to See Also as \code{\link{help}}, ~~~
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (Perm_Order, Netw, j) 
-{
-    J_jp1 <- Perm_Order[1:(j + 1)]
-    DFL <- (2 * t(Netw[J_jp1[max(NROW(J_jp1))], -J_jp1]) \%*\% 
-        Netw[J_jp1[max(NROW(J_jp1))], -J_jp1] + Netw[J_jp1[max(NROW(J_jp1))], 
-        J_jp1[max(NROW(J_jp1))]]^2)
-    return(DFL)
-  }
+require(Matrix)
+require(ggplot2)
+require(sn)
+require(fitdistrplus)
+require(psych)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

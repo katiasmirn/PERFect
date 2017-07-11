@@ -64,6 +64,13 @@ Ekaterina Smirnova
 See Also as \code{\link{DiffFiltLoss}}
 }
 \examples{
+require(Matrix)
+require(ggplot2)
+require(sn)
+require(fitdistrplus)
+require(psych)
+
+
 data(mock2)
 Prop <- mock2$Prop
 Counts <- mock2$Counts
