@@ -2,10 +2,10 @@
 \alias{DiffFiltLoss_j}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-%%  ~~function to do ... ~~
+Difference in filtering loss
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+This function calculates difference in filtering loss for the first j taxa
 }
 \usage{
 DiffFiltLoss_j(Perm_Order, Netw, j)
