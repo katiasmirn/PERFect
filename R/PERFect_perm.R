@@ -23,6 +23,11 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
   est_list <- list()
   fit_list <- list()
   X <- X[,Order]
+  #remove all-zero OTU columns
+  nzero.otu <- apply(X, 2, nnzero) != 0
+  X <- X[, nzero.otu]
+  p <- dim(X)[2]
+  Order <- Order[nzero.otu]
   #calculate loss
   #calculate DFL values
   Order_Ind <- rep(1:length(Order))#convert to numeric indicator values

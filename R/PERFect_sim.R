@@ -23,7 +23,11 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
   pDFL <- NULL
   phist <- NULL
   X <- X[,Order]#properly order columns of X
+  #remove all-zero OTU columns
+  nzero.otu <- apply(X, 2, nnzero) != 0
+  X <- X[, nzero.otu]
   p <- dim(X)[2]
+  Order <- Order[nzero.otu]
   #calculate DFL values
   Order_Ind <- rep(1:length(Order))#convert to numeric indicator values
   DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order) 
