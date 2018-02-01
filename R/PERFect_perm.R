@@ -3,7 +3,8 @@
 #of DFL
 ###########################################
 PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", alpha = 0.05,k = 10000,
-                          nbins =30, col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
+                          nbins =30, col = "red", fill = "green", hist_fill = 0.2, linecol = "blue",
+                         dfl_distr = NULL){
   #X- OTU table with taxa in columns and samples in rows
   #Order - ordering of taxa
   #quant - quantiles used to fit distribution
@@ -35,7 +36,7 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
   #name p-values
   names(pvals) <- names(DFL$DFL)
   #For each taxon j, create a distribution of its DFL's by permuting the labels 
-  dfl_distr <- sampl_distr(X = X, k=k)
+  if(!is.null(dfl_distr)){dfl_distr <- sampl_distr(X = X, k=k)}
   #build histograms for each taxon j
   for(i in 1:(p-1)) {
     
