@@ -36,7 +36,8 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
   #name p-values
   names(pvals) <- names(DFL$DFL)
   #For each taxon j, create a distribution of its DFL's by permuting the labels 
-  if(!is.null(dfl_distr)){dfl_distr <- sampl_distr(X = X, k=k)}
+  if(is.null(dfl_distr)){dfl_distr <- sampl_distr(X = X, k=k)}
+ 
   #build histograms for each taxon j
   for(i in 1:(p-1)) {
     
