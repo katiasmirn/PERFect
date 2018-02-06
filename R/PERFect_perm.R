@@ -56,7 +56,7 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
       theme(panel.background = element_rect(fill = "white"), 
             panel.grid.major = element_line(colour = "grey90"),
             axis.text.x  = element_text( size=10))+
-      ggtitle("") + xlab("Filtering Loss") + ylab("Density")
+      ggtitle("") + xlab("log differences in filtering loss") + ylab("Density")
     
     #estimate using normal
     if(distr == "norm"){

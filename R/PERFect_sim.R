@@ -43,7 +43,7 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
     theme(panel.background = element_rect(fill = "white"), 
           panel.grid.major = element_line(colour = "grey90"),
           axis.text.x  = element_text( size=10))+
-    ggtitle("") + xlab("Filtering Loss") + ylab("Density")
+    ggtitle("") + xlab("log differences in filtering loss") + ylab("Density")
   #estimate using normal 
   if(distr == "norm"){
     if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
