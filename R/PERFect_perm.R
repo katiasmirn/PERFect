@@ -4,7 +4,7 @@
 ###########################################
 PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", alpha = 0.05,k = 10000,
                           nbins =30, col = "red", fill = "green", hist_fill = 0.2, linecol = "blue",
-                         dfl_distr = NULL){
+                         dfl_distr = NULL,center = FALSE, normalize = FALSE){
   #X- OTU table with taxa in columns and samples in rows
   #Order - ordering of taxa
   #quant - quantiles used to fit distribution
@@ -18,6 +18,7 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
   #fill - color of histogram bars
   #hist_fill - color intensity of histogram bars
   #linecol - color of the line for fitted density
+  
   p <- dim(X)[2]
   pvals <- rep(0,p-1)
   hist_list <- lapply(1:(p-1),function(x) NULL)
@@ -29,6 +30,15 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
   X <- X[, nzero.otu]
   p <- dim(X)[2]
   Order <- Order[nzero.otu]
+  
+  #save non-centered, unnormalized X
+  X.orig <- X
+  #center if true
+  if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
+  
+  #convert to proportions if normalize = TRUE
+  if(normalize){X <- X/apply(X, 1, sum)}
+  
   #calculate loss
   #calculate DFL values
   Order_Ind <- rep(1:length(Order))#convert to numeric indicator values
@@ -90,7 +100,7 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
   else{Ind <- dim(X)[2]-1
        warning("no taxa are significant at a specified alpha level")}
   #if jth DFL is significant, then throw away all taxa 1:j 
-  filtX <- X[,-(1:Ind)]
+  filtX <- X.orig[,-(1:Ind)]
   return(list(filtX = filtX, pvals = pvals, fit = fit_list, hist = hist_list, 
               est =est_list,   dfl_distr=dfl_distr ))
 }

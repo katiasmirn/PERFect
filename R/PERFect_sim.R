@@ -17,7 +17,7 @@ rsmnorm<<-function(n, mean = 0, sd = 1, xi = 1.5){return(rsnorm(n, mean = 0, sd 
 #Fit quantiles to the log data and get p-values
 ######################################
 PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("norm", "sn", "t", "cauchy"),
-                    alpha = 0.05,
+                    alpha = 0.05, center = FALSE, normalize = FALSE,
                     col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
 
   pDFL <- NULL
@@ -28,6 +28,14 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
   X <- X[, nzero.otu]
   p <- dim(X)[2]
   Order <- Order[nzero.otu]
+  #save non-centered, unnormalized X
+  X.orig <- X
+  #center if true
+  if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
+  
+  #convert to proportions if normalize = TRUE
+  if(normalize){X <- X/apply(X, 1, sum)}
+  
   #calculate DFL values
   Order_Ind <- rep(1:length(Order))#convert to numeric indicator values
   DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order) 
@@ -100,7 +108,7 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
   else{Ind <- dim(X)[2]-1
        warning("no taxa are significant at a specified alpha level")}
   #if jth DFL is significant, then throw away all taxa 1:j 
-  filtX <- X[,-(1:Ind)]
+  filtX <- X.orig[,-(1:Ind)]
   
   return(list(filtX = filtX, pvals = round(pvals,5), DFL = DFL$DFL, fit=fit, hist = hist, est = est,   
               pDFL = DFL$p + ylab("Difference in Filtering Loss"))) 
