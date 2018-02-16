@@ -77,7 +77,7 @@ NP_Order <- function(Counts){
 
 pvals_Order <- function(Counts, res_sim){
   vec <- names(res_sim$pvals)
-  Order <- c(setdiff(names(Counts), vec), vec)
+  Order <- c(setdiff(colnames(Counts), vec), vec)
   Order_pvals <- Order[c(1,sort.int(res_sim$pvals, index.return = TRUE, decreasing = TRUE)$ix +1)]
   return(Order_pvals)
 }
