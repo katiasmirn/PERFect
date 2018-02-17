@@ -1,4 +1,5 @@
-PERFect_perm_reorder <- function(X,  Order_alt,  res_perm, alpha = 0.05, distr = "sn"){
+PERFect_perm_reorder <- function(X,  Order_alt,  res_perm, alpha = 0.05, distr = "sn",
+                                 lag = 2, direction ="left"){
   
   X2 <- X
   X2 <- X2[,Order_alt]
@@ -22,14 +23,17 @@ PERFect_perm_reorder <- function(X,  Order_alt,  res_perm, alpha = 0.05, distr =
     } 
   
   #re-calculate filtered X
+  #smooth p-values
+  pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )
+  
   #select taxa that are kept in the data set at significance level alpha
-  Ind <- which(pvals <=alpha)
+  Ind <- which(pvals_avg <=alpha)
   if (length(Ind !=0)) {Ind <- min(Ind)}
   else{Ind <- dim(X2)[2]-1
      warning("no taxa are significant at a specified alpha level")}
   #if jth DFL is significant, then throw away all taxa 1:j 
   res_perm$filtX <- X2[,-(1:Ind)]
-  res_perm$pvals <- pvals #end if !is.null(res_perm)
+  res_perm$pvals <- pvals_avg #end if !is.null(res_perm)
 
   return(res_perm)
 }

@@ -4,7 +4,8 @@
 ###########################################
 PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", alpha = 0.05,k = 10000,
                           nbins =30, col = "red", fill = "green", hist_fill = 0.2, linecol = "blue",
-                         dfl_distr = NULL,center = FALSE, normalize = FALSE){
+                         dfl_distr = NULL,center = FALSE, normalize = FALSE, 
+                         lag = 2, direction ="left"){
   #X- OTU table with taxa in columns and samples in rows
   #Order - ordering of taxa
   #quant - quantiles used to fit distribution
@@ -94,14 +95,17 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
     fit_list[[i]] <- fit
   }
   
+  #smooth p-values
+  pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )
+  
   #select taxa that are kept in the data set at significance level alpha
-  Ind <- which(pvals <=alpha)
+  Ind <- which(pvals_avg <=alpha)
   if (length(Ind !=0)) {Ind <- min(Ind)}
   else{Ind <- dim(X)[2]-1
        warning("no taxa are significant at a specified alpha level")}
   #if jth DFL is significant, then throw away all taxa 1:j 
   filtX <- X.orig[,-(1:Ind)]
-  return(list(filtX = filtX, pvals = pvals, fit = fit_list, hist = hist_list, 
+  return(list(filtX = filtX, pvals = pvals_avg, fit = fit_list, hist = hist_list, 
               est =est_list,   dfl_distr=dfl_distr ))
 }
 

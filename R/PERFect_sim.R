@@ -18,7 +18,8 @@ rsmnorm<<-function(n, mean = 0, sd = 1, xi = 1.5){return(rsnorm(n, mean = 0, sd 
 ######################################
 PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("norm", "sn", "t", "cauchy"),
                     alpha = 0.05, center = FALSE, normalize = FALSE,
-                    col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
+                    col = "red", fill = "green", hist_fill = 0.2, linecol = "blue",
+                    lag = 2, direction ="left"){
 
   pDFL <- NULL
   phist <- NULL
@@ -103,14 +104,18 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
   
   #select taxa that are kept in the data set at significance level alpha
   names(pvals) <- names(DFL$DFL)
-  Ind <- which(pvals <=alpha)
+  
+  #smooth p-values
+  pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )
+  
+  Ind <- which(pvals_avg <=alpha)
   if (length(Ind !=0)) {Ind <- min(Ind)}
   else{Ind <- dim(X)[2]-1
        warning("no taxa are significant at a specified alpha level")}
   #if jth DFL is significant, then throw away all taxa 1:j 
   filtX <- X.orig[,-(1:Ind)]
   
-  return(list(filtX = filtX, pvals = round(pvals,5), DFL = DFL$DFL, fit=fit, hist = hist, est = est,   
+  return(list(filtX = filtX, pvals = round(pvals_avg,5), DFL = DFL$DFL, fit=fit, hist = hist, est = est,   
               pDFL = DFL$p + ylab("Difference in Filtering Loss"))) 
 }
 
