@@ -107,6 +107,8 @@ PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("n
   
   #smooth p-values
   pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )
+  #replace na's with original values
+  pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
   
   Ind <- which(pvals_avg <=alpha)
   if (length(Ind !=0)) {Ind <- min(Ind)}

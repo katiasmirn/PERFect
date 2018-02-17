@@ -25,7 +25,8 @@ PERFect_perm_reorder <- function(X,  Order_alt,  res_perm, alpha = 0.05, distr =
   #re-calculate filtered X
   #smooth p-values
   pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )
-  
+  #replace na's with original values
+  pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
   #select taxa that are kept in the data set at significance level alpha
   Ind <- which(pvals_avg <=alpha)
   if (length(Ind !=0)) {Ind <- min(Ind)}
