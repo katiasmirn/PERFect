@@ -106,3 +106,16 @@ NCw_Order <- function(Counts){
   NCW <- names(NCW_val)
 }
 
+filt_pval <- function(X, pvals, alpha){
+  
+  #select taxa that are kept in the data set at significance level alpha
+  Ind <- which(pvals_avg <=alpha)
+  if (length(Ind !=0)) {Ind <- min(Ind)}
+  else{Ind <- dim(X)[2]-1
+  warning("no taxa are significant at a specified alpha level")}
+  #if jth DFL is significant, then throw away all taxa 1:j 
+  filtX <- X.orig[,-(1:Ind)]
+  
+  return(filtX)
+}
+

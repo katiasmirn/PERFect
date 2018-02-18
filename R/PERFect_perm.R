@@ -97,6 +97,9 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
   
   #smooth p-values
   pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )
+ 
+  #replace na's with original values
+  pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
   
   #select taxa that are kept in the data set at significance level alpha
   Ind <- which(pvals_avg <=alpha)
