@@ -114,7 +114,7 @@ filt_pval <- function(X, pvals, alpha){
   else{Ind <- dim(X)[2]-1
   warning("no taxa are significant at a specified alpha level")}
   #if jth DFL is significant, then throw away all taxa 1:j 
-  filtX <- X.orig[,-(1:Ind)]
+  filtX <- X[,-(1:Ind)]
   
   return(filtX)
 }
