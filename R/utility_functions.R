@@ -109,7 +109,7 @@ NCw_Order <- function(Counts){
 filt_pval <- function(X, pvals, alpha){
   
   #select taxa that are kept in the data set at significance level alpha
-  Ind <- which(pvals_avg <=alpha)
+  Ind <- which(pvals <=alpha)
   if (length(Ind !=0)) {Ind <- min(Ind)}
   else{Ind <- dim(X)[2]-1
   warning("no taxa are significant at a specified alpha level")}
