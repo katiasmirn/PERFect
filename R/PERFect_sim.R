@@ -16,34 +16,47 @@ rsmnorm<<-function(n, mean = 0, sd = 1, xi = 1.5){return(rsnorm(n, mean = 0, sd 
 ######################################
 #Fit quantiles to the log data and get p-values
 ######################################
-PERFect_sim <- function(X,  Order,  nbins =30, quant = c(0.25, 0.5), distr =c("norm", "sn", "t", "cauchy"),
-                    alpha = 0.05, center = FALSE, normalize = FALSE,
-                    col = "red", fill = "green", hist_fill = 0.2, linecol = "blue",
-                    lag = 2, direction ="left"){
+PERFect_sim <- function(X,  Order = "NP",   Order.user = NULL, 
+                    normalize = "counts", center = FALSE,
+                    quant = c(0.10, 0.25, 0.5),  distr ="sn",
+                    alpha = 0.10, lag = 3, direction ="left",
+                    pvals_sim = NULL,
+                    nbins =30, 
+                    col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
 
   pDFL <- NULL
   phist <- NULL
-  X <- X[,Order]#properly order columns of X
+  #save non-centered, unnormalized X
+  X.orig <- X
+  
+  #normalize the data
+  if(normalize == "prop"){X <- X/apply(X, 1, sum)}
+  else if (normalize == "pres"){X[X!=0]<-1}
+  
+  #Order columns by importance
+  if(Order == "NP") {Order.vec <- NP_Order(X)}
+  if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
+  if(Order == "NC"){Order.vec <- NC_Order(X)}
+  if(Order == "NCw"){Order.vec <- NCw_Order(X)}
+  else if (!is.null(Order.user)) {Order.vec = Order.user} #user-specified ordering of columns of X
+  X <- X[,Order.vec]#properly order columns of X
+  
   #remove all-zero OTU columns
   nzero.otu <- apply(X, 2, nnzero) != 0
   X <- X[, nzero.otu]
   p <- dim(X)[2]
-  Order <- Order[nzero.otu]
-  #save non-centered, unnormalized X
-  X.orig <- X
+  Order.vec <- Order.vec[nzero.otu]
+  
   #center if true
   if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
   
-  #convert to proportions if normalize = TRUE
-  if(normalize){X <- X/apply(X, 1, sum)}
-  
   #calculate DFL values
-  Order_Ind <- rep(1:length(Order))#convert to numeric indicator values
-  DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order) 
+  Order_Ind <- rep(1:length(Order.vec))#convert to numeric indicator values
+  DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec) 
   #alternative calculation of filtering loss using presise formula
   #Function to calculate j^th DFL loss 
   
-  Taxa <- Order[-length(Order)]
+  Taxa <- Order.vec[-length(Order.vec)]
   lfl <- data.frame(Taxa, log(DFL$DFL))
   names(lfl) <- c("Taxa", "DFL")
   #plot histogram

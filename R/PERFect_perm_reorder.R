@@ -1,10 +1,34 @@
-PERFect_perm_reorder <- function(X,  Order_alt,  res_perm, alpha = 0.05, distr = "sn",
-                                 lag = 2, direction ="left"){
+PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm, 
+                                 normalize = "counts", center = FALSE, alpha = 0.10, distr = "sn",
+                                 lag = 3, direction ="left", pvals_sim = NULL){
   
-  X2 <- X
-  X2 <- X2[,Order_alt]
-  Order_Ind <- rep(1:length(Order_alt))#convert to numeric indicator values
-  DFL <- DiffFiltLoss(X = X2, Order_Ind, Plot = TRUE, Taxa_Names = Order_alt) 
+  #save non-centered, unnormalized X
+  X.orig <- X
+  
+  #normalize the data
+  if(normalize == "prop"){X <- X/apply(X, 1, sum)}
+  else if (normalize == "pres"){X[X!=0]<-1}
+  
+  #Order columns by importance
+  if(Order == "NP") {Order.vec <- NP_Order(X)}
+  if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
+  if(Order == "NC"){Order.vec <- NC_Order(X)}
+  if(Order == "NCw"){Order.vec <- NCw_Order(X)}
+  else if (!is.null(Order.user)) {Order.vec = Order.user} #user-specified ordering of columns of X
+  
+  X <- X[,Order.vec]#properly order columns of X
+  
+  #remove all-zero OTU columns
+  nzero.otu <- apply(X, 2, nnzero) != 0
+  X <- X[, nzero.otu]
+  p <- dim(X)[2]
+  Order.vec <- Order.vec[nzero.otu]
+  
+  #center if true
+  if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
+  
+  Order_Ind <- rep(1:length(Order.vec))#convert to numeric indicator values
+  DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec) 
   #re-evaluate p-values
   pvals <- rep(0, length(DFL$DFL))
   names(pvals) <- names(DFL$DFL)
@@ -30,10 +54,10 @@ PERFect_perm_reorder <- function(X,  Order_alt,  res_perm, alpha = 0.05, distr =
   #select taxa that are kept in the data set at significance level alpha
   Ind <- which(pvals_avg <=alpha)
   if (length(Ind !=0)) {Ind <- min(Ind)}
-  else{Ind <- dim(X2)[2]-1
+  else{Ind <- dim(X)[2]-1
      warning("no taxa are significant at a specified alpha level")}
   #if jth DFL is significant, then throw away all taxa 1:j 
-  res_perm$filtX <- X2[,-(1:Ind)]
+  res_perm$filtX <- X.orig[,-(1:Ind)]
   res_perm$pvals <- pvals_avg #end if !is.null(res_perm)
 
   return(res_perm)

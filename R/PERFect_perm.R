@@ -2,10 +2,14 @@
 #Use permutations to build the distribution 
 #of DFL
 ###########################################
-PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", alpha = 0.05,k = 10000,
-                          nbins =30, col = "red", fill = "green", hist_fill = 0.2, linecol = "blue",
-                         dfl_distr = NULL,center = FALSE, normalize = FALSE, 
-                         lag = 2, direction ="left"){
+PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
+                         normalize = "counts", center = FALSE, 
+                         quant = c(0.10, 0.25, 0.5),  distr ="sn",
+                         alpha = 0.10, lag = 3, direction ="left",
+                         pvals_sim = NULL, 
+                         k=1000, dfl_distr = NULL,
+                         nbins =30,
+                         col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
   #X- OTU table with taxa in columns and samples in rows
   #Order - ordering of taxa
   #quant - quantiles used to fit distribution
@@ -19,31 +23,39 @@ PERFect_perm <- function(X,  Order,   quant = c(0.1,0.25, 0.5), distr = "sn", al
   #fill - color of histogram bars
   #hist_fill - color intensity of histogram bars
   #linecol - color of the line for fitted density
+  #save non-centered, unnormalized X
+  X.orig <- X
   
-  p <- dim(X)[2]
-  pvals <- rep(0,p-1)
-  hist_list <- lapply(1:(p-1),function(x) NULL)
-  est_list <- list()
-  fit_list <- list()
-  X <- X[,Order]
+  #normalize the data
+  if(normalize == "prop"){X <- X/apply(X, 1, sum)}
+  else if (normalize == "pres"){X[X!=0]<-1}
+  
+  #Order columns by importance
+  if(Order == "NP") {Order.vec <- NP_Order(X)}
+  if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
+  if(Order == "NC"){Order.vec <- NC_Order(X)}
+  if(Order == "NCw"){Order.vec <- NCw_Order(X)}
+  else if (!is.null(Order.user)) {Order.vec = Order.user} #user-specified ordering of columns of X
+  
+  X <- X[,Order.vec]#properly order columns of X
+  
   #remove all-zero OTU columns
   nzero.otu <- apply(X, 2, nnzero) != 0
   X <- X[, nzero.otu]
   p <- dim(X)[2]
-  Order <- Order[nzero.otu]
+  Order.vec <- Order.vec[nzero.otu]
   
-  #save non-centered, unnormalized X
-  X.orig <- X
   #center if true
   if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
   
-  #convert to proportions if normalize = TRUE
-  if(normalize){X <- X/apply(X, 1, sum)}
-  
+  pvals <- rep(0,p-1)
+  hist_list <- lapply(1:(p-1),function(x) NULL)
+  est_list <- list()
+  fit_list <- list()
   #calculate loss
   #calculate DFL values
-  Order_Ind <- rep(1:length(Order))#convert to numeric indicator values
-  DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order) 
+  Order_Ind <- rep(1:length(Order.vec))#convert to numeric indicator values
+  DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec) 
   #name p-values
   names(pvals) <- names(DFL$DFL)
   #For each taxon j, create a distribution of its DFL's by permuting the labels 
