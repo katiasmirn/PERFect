@@ -2,13 +2,6 @@ PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
                                  normalize = "counts", center = FALSE, alpha = 0.10, distr = "sn",
                                  lag = 3, direction ="left", pvals_sim = NULL){
   
-  #save non-centered, unnormalized X
-  X.orig <- X
-  
-  #normalize the data
-  if(normalize == "prop"){X <- X/apply(X, 1, sum)}
-  else if (normalize == "pres"){X[X!=0]<-1}
-  
   #Order columns by importance
   if(Order == "NP") {Order.vec <- NP_Order(X)}
   if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
@@ -17,12 +10,18 @@ PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
   else if (!is.null(Order.user)) {Order.vec = Order.user} #user-specified ordering of columns of X
   
   X <- X[,Order.vec]#properly order columns of X
+  #save non-centered, non-normalized X
+  X.orig <- X
   
   #remove all-zero OTU columns
   nzero.otu <- apply(X, 2, nnzero) != 0
   X <- X[, nzero.otu]
   p <- dim(X)[2]
   Order.vec <- Order.vec[nzero.otu]
+  
+  #normalize the data
+  if(normalize == "prop"){X <- X/apply(X, 1, sum)}
+  else if (normalize == "pres"){X[X!=0]<-1}
   
   #center if true
   if(center){X <- apply(X, 2, function(x) {x-mean(x)})}

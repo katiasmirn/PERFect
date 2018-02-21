@@ -106,7 +106,20 @@ NCw_Order <- function(Counts){
   NCW <- names(NCW_val)
 }
 
-filt_pval <- function(X, pvals, alpha){
+filt_pval <- function(X, pvals, alpha, Order = "NP",   Order.user = NULL, pvals_sim = NULL){
+  
+  #Order columns by importance
+  if(Order == "NP") {Order.vec <- NP_Order(X)}
+  if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
+  if(Order == "NC"){Order.vec <- NC_Order(X)}
+  if(Order == "NCw"){Order.vec <- NCw_Order(X)}
+  else if (!is.null(Order.user)) {Order.vec = Order.user} #user-specified ordering of columns of X
+  X <- X[,Order.vec]#properly order columns of X
+  #remove all-zero OTU columns
+  nzero.otu <- apply(X, 2, nnzero) != 0
+  X <- X[, nzero.otu]
+  p <- dim(X)[2]
+  Order.vec <- Order.vec[nzero.otu]
   
   #select taxa that are kept in the data set at significance level alpha
   Ind <- which(pvals <=alpha)

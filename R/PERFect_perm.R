@@ -23,12 +23,6 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
   #fill - color of histogram bars
   #hist_fill - color intensity of histogram bars
   #linecol - color of the line for fitted density
-  #save non-centered, unnormalized X
-  X.orig <- X
-  
-  #normalize the data
-  if(normalize == "prop"){X <- X/apply(X, 1, sum)}
-  else if (normalize == "pres"){X[X!=0]<-1}
   
   #Order columns by importance
   if(Order == "NP") {Order.vec <- NP_Order(X)}
@@ -36,7 +30,6 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
   if(Order == "NC"){Order.vec <- NC_Order(X)}
   if(Order == "NCw"){Order.vec <- NCw_Order(X)}
   else if (!is.null(Order.user)) {Order.vec = Order.user} #user-specified ordering of columns of X
-  
   X <- X[,Order.vec]#properly order columns of X
   
   #remove all-zero OTU columns
@@ -44,6 +37,13 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
   X <- X[, nzero.otu]
   p <- dim(X)[2]
   Order.vec <- Order.vec[nzero.otu]
+  
+  #save non-centered, non-normalized X
+  X.orig <- X
+  
+  #normalize the data
+  if(normalize == "prop"){X <- X/apply(X, 1, sum)}
+  else if (normalize == "pres"){X[X!=0]<-1}
   
   #center if true
   if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
