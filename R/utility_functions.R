@@ -11,12 +11,13 @@ DiffFiltLoss_j <- function(Perm_Order,Netw, j){
 ##################################
 #Randomly permute labels n times for a fixed j
 #################################
-Perm_j_s <- function(j, Netw, k,p){
+Perm_j_s <- function(j, Netw, k,p, p2 = NULL){
   #Netw = X'X - data matrix with taxa in columns and samples in rows
   #k - number of permutations used  
   #create a list of k*p arraments of orders
+  if(is.null(p2)){p2 <- p}
   labl <- sapply(1:k,function(x) NULL)
-  labl <- lapply(labl,function(x)  sample(1:p,p))
+  labl <- lapply(labl,function(x)  sample(1:p,p2))
   FL_j <- lapply(labl,DiffFiltLoss_j, Netw = Netw, j=j) 
   #divide by the full matrix norm values 
   res <- unlist(FL_j)/tr(t(Netw)%*%Netw)#this is full norm value
@@ -26,12 +27,13 @@ Perm_j_s <- function(j, Netw, k,p){
 ###################################################
 #Obtain sampling distribution using permutations of DFL
 ###################################################
-sampl_distr <- function(X, k){
+sampl_distr <- function(X, k, sample = FALSE){
 p <- dim(X)[2] 
 Netw <- t(as.matrix(X))%*%as.matrix(X)  
 #For each taxon j, create a distribution of its DFL's by permuting the labels 
 res_all <- lapply(1:(p-1),function(x) x)
-res_pres <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p))
+if(sample == FALSE) {res_pres <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = NULL))}
+if(sample == TRUE) {res_pres <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = x+1))}
 return(res_pres)
 }
 
