@@ -53,8 +53,7 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
   
   pvals <- rep(0,p-1)
   hist_list <- lapply(1:(p-1),function(x) NULL)
-  est_list <- list()
-  fit_list <- list()
+ 
   #calculate loss
   #calculate DFL values
   Order_Ind <- rep(1:length(Order.vec))#convert to numeric indicator values
@@ -135,7 +134,7 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
        warning("no taxa are significant at a specified alpha level")}
   #if jth DFL is significant, then throw away all taxa 1:j 
   filtX <- X.orig[,-(1:Ind)]
-  return(list(filtX = filtX, pvals = pvals_avg, fit = fit_list, hist = hist_list, 
-              est =est_list,   dfl_distr=dfl_distr ))
+  return(list(filtX = filtX, pvals = pvals_avg, fit = fit, hist = hist_list, 
+              est =est,   dfl_distr=dfl_distr ))
 }
 
