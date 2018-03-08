@@ -8,7 +8,7 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
                          alpha = 0.10, lag = 3, direction ="left",
                          pvals_sim = NULL, 
                          k=1000, dfl_distr = NULL,
-                         nbins =30, sample = FALSE,
+                         nbins =30, sample = FALSE, hist = FALSE,
                          col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
   #X- OTU table with taxa in columns and samples in rows
   #Order - ordering of taxa
@@ -24,6 +24,9 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
   #hist_fill - color intensity of histogram bars
   #linecol - color of the line for fitted density
   
+  #convert X to matrix
+  if(!(class(X) == "matrix")){X <- as.matrix(X)}
+     
   #Order columns by importance
   if(Order == "NP") {Order.vec <- NP_Order(X)}
   if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
@@ -60,7 +63,29 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
   names(pvals) <- names(DFL$DFL)
   #For each taxon j, create a distribution of its DFL's by permuting the labels 
   if(is.null(dfl_distr)){dfl_distr <- sampl_distr(X = X, k=k, sample = sample)}
- 
+  #convert to log differences
+  lfl <- lapply(dfl_distr, function(x) log(x[!x==0]))
+  #fit the distribution  
+  if(distr == "norm"){
+    fit <- lapply(lfl, function(x) qmedist(x, distr, probs=quant))
+    est <- lapply(fit, function(x) x$estimate)
+    for(i in 1:(p-1)){
+        pvals[i] <- pnorm(q=log(DFL$DFL[i]), mean = est[[i]][1], sd = est[[i]][2], 
+                      lower.tail = FALSE, log.p = FALSE)}
+  }
+  
+  if(distr == "sn"){
+    #lp <- lapply(lfl, function(x) list(xi = mean(x), omega = sd(x), alpha = 1.5))
+    lp <- list(xi = mean(lfl[[1]]), omega = sd(lfl[[1]]), alpha = 1.5)
+    fit <- lapply(lfl, function(x) qmedist(x, distr, probs=quant, start=lp))  
+    est <- lapply(fit, function(x) x$estimate)
+    for(i in 1:(p-1)){
+      pvals[i] <- 1 - psn(x=log(DFL$DFL[i]), 
+                      xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3])}
+  }
+  
+    if(hist == TRUE){
+      lfl <- lapply(lfl, function(x) data.frame(x))    
   #build histograms for each taxon j
   for(i in 1:(p-1)) {
     
@@ -83,30 +108,20 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
     
     #estimate using normal
     if(distr == "norm"){
-      fit <- qmedist(lfl$DFL, distr, probs=quant)  
-      est <- fit$estimate
       #add density line to the plot
-      hist <- hist + stat_function(fun = dnorm, args = list(mean = est[1], sd = est[2]), colour=linecol)
+      hist <- hist + stat_function(fun = dnorm, 
+                  args = list(mean = est[[i]][1], sd = est[[i]][2]), colour=linecol)
       hist_list[[i]] <- hist
-      #calculate p-values
-      pvals[i] <- pnorm(q=log(DFL$DFL[i]), mean = est[1], sd = est[2], lower.tail = FALSE, log.p = FALSE)
     }
     
     #estimate using skew normal 
     if(distr == "sn"){
-      lp <- list(xi = mean(lfl$DFL), omega = sd(lfl$DFL), alpha = 1.5)
-      fit <- qmedist(lfl$DFL, distr, probs=quant, start=lp)
-      est <- fit$estimate
-      hist <- hist + stat_function(fun = dsn, args = list(xi = est[1], omega = est[2], alpha = est[3]), colour=linecol)
+      hist <- hist + stat_function(fun = dsn, 
+            args = list(xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3]), colour=linecol)
       hist_list[[i]] <- hist
-      #calculate p-values
-      pvals[i] <- 1- psn(x=log(DFL$DFL[i]), xi = est[1], omega = est[2], alpha = est[3])
     }
-    #save estimate results
-    est_list[[i]] <- est
-    fit_list[[i]] <- fit
   }
-  
+  }#end if hist == TRUE
   #smooth p-values
   pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )
   

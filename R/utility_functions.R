@@ -18,10 +18,8 @@ Perm_j_s <- function(j, Netw, k,p, p2 = NULL){
   if(is.null(p2)){p2 <- p}
   labl <- sapply(1:k,function(x) NULL)
   labl <- lapply(labl,function(x)  sample(1:p,p2))
-  FL_j <- lapply(labl,DiffFiltLoss_j, Netw = Netw, j=j) 
-  #divide by the full matrix norm values 
-  res <- unlist(FL_j)/tr(t(Netw)%*%Netw)#this is full norm value
-  return(res)
+  FL_j <- sapply(labl,DiffFiltLoss_j, Netw = Netw, j=j)
+  return(FL_j)
 }
 
 ###################################################
@@ -29,11 +27,14 @@ Perm_j_s <- function(j, Netw, k,p, p2 = NULL){
 ###################################################
 sampl_distr <- function(X, k, sample = FALSE){
 p <- dim(X)[2] 
-Netw <- t(as.matrix(X))%*%as.matrix(X)  
+Netw <- t(X)%*%X
+full_norm <- tr(t(Netw)%*%Netw)#this is full norm value
 #For each taxon j, create a distribution of its DFL's by permuting the labels 
 res_all <- lapply(1:(p-1),function(x) x)
-if(sample == FALSE) {res_pres <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = NULL))}
-if(sample == TRUE) {res_pres <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = x+1))}
+if(sample == FALSE) {FL_j <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = NULL))}
+if(sample == TRUE) {FL_j <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = x+1))}
+#divide by the full matrix norm values 
+res_pres <- lapply(FL_j, function(x) {x/full_norm})
 return(res_pres)
 }
 
@@ -86,7 +87,7 @@ pvals_Order <- function(Counts, res_sim){
 
 NC_Order <- function(Counts){
   
-  Netw <- t(as.matrix(Counts))%*%as.matrix(Counts)
+  Netw <- t(Counts)%*%Counts
   Netw2 <- Netw
   diag(Netw2) <- 0
   NC_val <- sort(apply(Netw2, 2, nnzero), decreasing = FALSE)
@@ -96,7 +97,7 @@ NC_Order <- function(Counts){
 
 NCw_Order <- function(Counts){
   #first calculate NC values
-  Netw <- t(as.matrix(Counts))%*%as.matrix(Counts)
+  Netw <- t(Counts)%*%Counts
   Netw2 <- Netw
   diag(Netw2) <- 0
   NC_val <- sort(apply(Netw2, 2, nnzero), decreasing = FALSE)
