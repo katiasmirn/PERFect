@@ -25,14 +25,13 @@ Perm_j_s <- function(j, Netw, k,p, p2 = NULL){
 ###################################################
 #Obtain sampling distribution using permutations of DFL
 ###################################################
-sampl_distr <- function(X, k, sample = FALSE){
+sampl_distr <- function(X, k){
 p <- dim(X)[2] 
 Netw <- t(X)%*%X
 full_norm <- tr(t(Netw)%*%Netw)#this is full norm value
 #For each taxon j, create a distribution of its DFL's by permuting the labels 
 res_all <- lapply(1:(p-1),function(x) x)
-if(sample == FALSE) {FL_j <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = NULL))}
-if(sample == TRUE) {FL_j <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = x+1))}
+FL_j <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = x+1))
 #divide by the full matrix norm values 
 res_pres <- lapply(FL_j, function(x) {x/full_norm})
 return(res_pres)

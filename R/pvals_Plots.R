@@ -1,29 +1,32 @@
-pvals_Plots <- function(PERFect, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05){
+pvals_Plots <- function(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.1){
+  
+  if(!(0 %in% quantiles)){quantiles <- c(0, quantiles)}
+  if(!(1 %in% quantiles)){quantiles <- c(1, quantiles)}
+  quantiles <- sort(quantiles)
+  
   pvals <- PERFect$pvals
   Order_pvals <- names(pvals)
   #taxa that separate the filtered out data set
-  taxa_filt <- Order_pvals[!(Order_pvals %in% names(PERFect$filtX))]
+  taxa_filt <- Order_pvals[!(Order_pvals %in% colnames(PERFect$filtX))]
   taxa <- max(which(taxa_filt %in% Order_pvals))
   #calculate FLu values
-  res_FLu <- FiltLoss(X = Prop[,Order_pvals], Order = Order_pvals, type =  "Ind", Plot = TRUE)$FL
+  res_FLu <- FiltLoss(X = X[,Order_pvals], Order = Order_pvals, type =  "Ind", Plot = TRUE)$FL
   #create a color scale for p-values plot
   FLu_vals <- res_FLu
   breaks <- quantile(res_FLu, quantiles)
-  FLu_vals[FLu_vals <=breaks[1]] <- 1
-  FLu_vals[FLu_vals > breaks[1] & FLu_vals <=breaks[2]] <- 2
-  FLu_vals[FLu_vals > breaks[2] & FLu_vals <=breaks[3]] <- 3
-  FLu_vals[FLu_vals > breaks[3] & FLu_vals <=breaks[4]] <- 4
-  FLu_vals[!(FLu_vals %in% c(1,2,3,4))] <- 5
+  seq1 <- round(100*quantiles)[-length(quantiles)]
+  seq2 <- round(100*quantiles)[-1]
+  labs <- paste(seq1, seq2, sep = "-")
+  labs <- paste("[",labs, ")%", sep = "")
+  FLu_vals <- cut(res_FLu, breaks, right=FALSE , labels = labs, include.lowest = TRUE)
 
-  FLu_vals[FLu_vals == 1] <- "0-25%"
-  FLu_vals[FLu_vals == 2] <- "25 - 50%"
-  FLu_vals[FLu_vals == 3] <- "50 - 80%"
-  FLu_vals[FLu_vals ==4] <- "80 - 90%"
-  FLu_vals[FLu_vals ==5] <- "90 - 100%"
   #overlay individual filtering loss information using points size
   #plot p-values
-  df <- data.frame(seq(1:length(pvals)), pvals, res_FLu[which(names(res_FLu) %in% names(pvals))],
-                 FLu_vals[which(names(FLu_vals) %in% names(pvals))])
+  Ind <- which(names(res_FLu) %in% names(pvals))
+  df <- data.frame(seq(1:length(pvals)), 
+                   pvals, 
+                   res_FLu[Ind],
+                   FLu_vals[Ind])
   names(df) <- c("Taxa", "p_value", "FLu", "Quantiles")
   p_pvals <- ggplot(df) + geom_point( aes(x = Taxa, y = p_value, color = Quantiles)) +
   ggtitle("Permutation PERFect p-values") +
@@ -36,5 +39,5 @@ pvals_Plots <- function(PERFect, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
   p_pvals <- p_pvals + geom_hline(yintercept=alpha, color="red", linetype="dashed")
   #add taxa cutoff at alpha level vertical  line info
   p_pvals <- p_pvals + ggtitle("") + geom_vline(xintercept=taxa, color="purple", linetype="dashed")
-  return(p_pvals)
+  return(list(data = df, plot = p_pvals))
 }
