@@ -1,0 +1,491 @@
+---
+title: "PERFect: permutation algorithm illustration on a small subset of mock 2 data"
+author: "Ekaterina Smirnova"
+date: "`r date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+vignette: >
+  %\VignetteIndexEntry{Simulations}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+---
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo = FALSE,fig.align='center')
+```
+
+
+
+```{r required_libraries}
+
+rm(list=ls())
+
+library(Matrix)
+library(devtools)
+require(ggplot2)
+require(sn)
+require(fitdistrplus)
+require(psych) 
+library(PERFect)
+library(dirmult)
+library(HMP)
+library(knitr)
+library(gridExtra)
+library(grid)
+library(reshape2)
+library(zoo)
+library(kableExtra)
+
+set.seed(12341)
+setwd("~/Dropbox/PERFect/RCode/")
+
+```
+
+
+This vignette illustrates the intuition behind the choice of filtering loss $FL(J)$ and the PERFect permutation approach on  a small subset of the mock community data 2: bias experiment data with 7 signal taxa. The number of taxa identified by the sequencing and bioinformatics pipeline was $46$. From this data set, we have selected a total of $p = 20$ taxa and $n = 10$ samples. We have ordered columns by taxa abundance, such that the first 13 rare taxa are noise and the rest are signal. We have labeled taxa according to noise and signal abundance ordering, such that $N_1$ stands for the least abundant noise taxon, $N_2$ the second least abundant noise taxon, $S_1$ the first least abundant signal taxon, and so on. The corresponding counts data matrix is given below.
+
+
+```{r}
+data(mock2)
+Counts <- mock2$Counts
+#taxa <- sample(colnames(Counts[,!(colnames(Counts) %in% mock2$TrueTaxa)]), 20)
+taxa <- c("Bradyrhizobiaceae.cluster49", "Propionibacterium.acnes", "Gemella.OTU86",
+          "Comamonadaceae.cluster57", "Streptococcus.gordonii", "Caulobacter.leidyi",
+          "Finegoldia.magna", "Aerococcus.christensenii", "Agromyces.cluster54",
+          "Mycoplasma.orale_faucium", "Enterobacteriaceae.cluster31",
+          "Lactobacillus.jensenii", "Fusobacterium.cluster48", "Methylophilus.cluster11",
+          "Coriobacteriaceae.OTU27", "Prevotella.cluster2",
+          "Delftia.acidovorans_lacustris_tsuruhatensis", "Hyphomicrobium.methylovorum",
+          "Bifidobacterium.longum_infantis_suis", "Streptococcus.parasanguinis")
+Ind <- apply(Counts[,taxa], 2, function(x) which(x!=0))
+sampleID <- c(31,78, 39, 5, 9, 76, 22, 105, 34, 82)
+data <- Counts[sampleID,c(taxa, mock2$TrueTaxa)]
+data <- data[,apply(data, 2, nnzero) >0]
+data<- data[,-3]
+#sort by abundance
+data <- data[, NP_Order(data)]
+#apply(data, 2, nnzero)
+#rename columns by noise and signal
+SignTaxa <- colnames(data) %in% mock2$TrueTaxa
+colnames(data)[SignTaxa] <-paste0("S_", 1:sum(SignTaxa))
+colnames(data)[!SignTaxa] <-paste0("N_", 1:(dim(data)[2] -sum(SignTaxa)))
+rownames(data) <- paste("Sample_", 1:nrow(data))
+
+kable(data[,1:13], 
+      format='html', 
+      digits=2, 
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 10) 
+
+kable(data[,14:20], 
+      format='html',
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 10)
+```
+
+#Filtering loss function
+
+We define the loss due to filtering out the $j$th taxon  as,  
+$$
+FL_u(j)= 1- \frac{\|X^T_{-j} X_{-j}\|_F^2}{\|X^TX\|_F^2}, 
+$$
+where $X_{{-j}}$ is the $n\times (p-1)$ dimensional matrix obtained by removing the $j$th column from the data matrix $X$.   Here $\| Z\|^2_F := \mbox{tr}(Z^TZ) =  \sum_{j=1}^p \boldsymbol z_j^T\boldsymbol z_j$  is the Frobenius norm  of matrix $Z$.  \emph{The  covariance  matrix of column-wise centered data $X$ is estimated as  $S = \frac{1}{n}X^TX$, thus the filtering loss can be viewed as  the ratio of  filtered  and  full covariance matrix magnitudes. The Frobenius norm $\|X^TX\|^2_F = \sum_{j=1}^p(\boldsymbol x_j^T\boldsymbol x_j)^2 + 2\sum_{i \neq j}(\boldsymbol x_i^T \boldsymbol x_j)^2$ measures total covariance of the data, thus the filtering loss criterion  accounts both for the contribution of the $j$th taxon and its co-occurrence with other taxa.}  Similarly, we define the filtering loss due to removing a group of taxa, $J$, as
+$$
+FL (J)= 1- \frac{\|X^T_{-J}  X_{-J}\|_F^2}{\|X^TX\|_F^2}, 
+$$
+where $X_{-J}$ is the $n \times (p-|J|)$ dimensional matrix obtained by removing the columns indexed by the set $J$ from the data matrix $X$.
+
+An underlying assumption for this filtering loss is that is a noise taxon is not important, removing it will not dramatically affect the magnitude of taxa covariance matrix (up to a scaling factor) $X^TX$.  To illustrate the ability of this filtering loss to distinguish between noise and signal taxa, we calculate filtering loss values for this data.  In this example,  the magnitude of the full OTU table, denominator in the filtering loss function value, is $8.1258\times 10^{18}$. Table below compares the magnitudes of reduced OTU tables and corresponding filtering loss values due to removing: 1) the $10$th  least abundant noise taxon, $J_1 = \{N_{10}\}$; 2) the $1$st least abundant signal taxon $J_2 = \{S_1\}$; 3) all noise taxa, $J_3 = \{N_1, \dots, N_{13}\}$; and 4) all noise taxa plus the $1$st least abundant signal, $J_4 = \{N_1, \dots, N_{13}, S_1\}$.  
+
+The filtered OTU table magnitude $\|X^T_{-J}X_{-J}\|_F^2$ for the 10th least abundant taxon is almost the same as that of the full OTU table $\|X^TX\|^2_F$ (displayed as the same value due to rounding), thus filtering loss is minimal, $FL(J) = 3.7876 \times 10^{-07}$ ($-14.786$ on the log scale). However, the loss due to removing the signal taxon is significantly larger $FL(J) = 9.3960 \times 10^{-04}$ ($-6.970$ on the log scale).  Log filtering loss due to removing all noise taxa is minimal $-13.545$, thus removing an additional  signal taxon $S_1$ increases overall log filtering loss for the set $J_4$ to $-6.969$. These differences reflect that all noise taxa cumulatively have less contribution  than a single signal taxon.  
+
+```{r}
+X <- as.matrix(data)
+Netw <- t(as.matrix(X))%*%as.matrix(X)
+den <- tr(t(Netw)%*%Netw)
+#removing 10th noise taxon
+X_R <- X[,-which(colnames(X) == "N_10")]
+#calculate corresponding norm
+Netw_R <- t(X_R)%*%X_R
+num <-  tr(t(Netw_R)%*%Netw_R)
+FL <-  1 - (num/den)
+df <- data.frame(num = num, den = den, FL = FL, log_FL = round(log(FL), 3))
+
+#removing first least abundant signal taxon
+X_R <- X[,-which(colnames(X) == "S_1")]
+Netw_R <- t(X_R)%*%X_R
+num <-  tr(t(Netw_R)%*%Netw_R)
+FL <-  1 - (num/den)
+df <- rbind(df, c(num, den, FL, round(log(FL), 3)))
+
+#removing all noise taxa
+X_R <- X[,-which(substr(colnames(X), start = 1, stop = 2) %in% "N_")]
+Netw_R <- t(X_R)%*%X_R
+num <-  tr(t(Netw_R)%*%Netw_R)
+FL <-  1 - (num/den)
+df <- rbind(df, c(num, den, FL, round(log(FL), 3)))
+
+#removing all noise + first signal taxon
+X_R <- X[,-c(which(substr(colnames(X), start = 1, stop = 2) %in% "N_"),
+             which(colnames(X) == "S_1"))]
+Netw_R <- t(X_R)%*%X_R
+num <-  tr(t(Netw_R)%*%Netw_R)
+FL <-  1 - (num/den)
+df <- rbind(df, c(num, den, FL, round(log(FL), 3)))
+
+rownames(df) <- c("N_10", "S_1", "noise taxa",  "noise taxa + S_1")
+df[,1:3] <- format(df[,1:3], width = 1, digits = 5, format = "g")
+
+kable(df, 
+      format='html',
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 12)
+```
+
+
+```{r}
+#function to output results for each simulation run
+resSummary <-function(X, filtX,  time = NA){
+  
+  rank_pvals = NULL 
+  rank_pres = NULL
+  ntotal <- dim(X)[2]
+  npres <- dim(filtX)[2] #number of taxa left
+  
+  pfilt <- (ntotal - npres)/ntotal #percentage of taxa filtered
+
+  #combine into results vector
+  res <- c(ntotal, npres, pfilt)
+  names(res) <- c("ntotal", "npres", "pfilt")
+  
+  return(list(res = res,  time = time))
+  
+}
+```
+
+#Permutation PERFect algorithm
+
+**Input**: OTU table above, test critical value $\alpha = 0.1$
+
+1. Run simultaneous PERFect algorithm to obtain  taxa p-values $p_j, j=1, \dots, p$ 
+
+```{r}
+
+#########################
+#quantiles from fit a
+##########################
+start <- Sys.time()
+res_sim <- PERFect_sim(X=data)
+end <-  Sys.time()-start
+summary_sim <- resSummary(X = data, filtX = res_sim$filtX, time = end)
+
+```
+
+2. Order columns of $X$ such  that $p_1 \geq p_2 \geq p_p$. 
+
+In the first row of  counts table below,  we list taxa simultaneous PERFect p-values. Notice that for some taxa that were initially less important according to the the abundance ordering,  gained higher ranking according to simultaneous PERFect p-values. For example,  "N_2", the $2$nd least important taxon in the abundance ordering, is now the $7$th least important taxon in the simultaneous PERFect p-values ordering. 
+
+
+```{r}
+#add p-values column to the data
+pvals  <- c(1, round(res_sim$pvals, 2))
+pvals.sort  <- sort.int(pvals, decreasing = TRUE, index.return = TRUE)
+#sort data by p-values
+data <- data[, pvals.sort$ix]
+#save X for illustrating method steps
+X = as.matrix(data)
+#add p-values to the data
+data <- rbind(pvals.sort$x, data)
+rownames(data)[1] <- "pvalues_sim"
+data[1,1] <- NA
+
+
+kable(data[,1:13], 
+      format='html', 
+      digits=2, 
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 10) 
+
+kable(data[,14:20], 
+      format='html',
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 10)
+```
+
+3. For  taxon $j = 1, \dots, p-1$
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Let $J_j = \{1, \dots, j\}$
+  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Calculate $DFL(j+1) = FL(J+1) - FL(J)$ 
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; end
+        
+The test statistic $DFL$ and its corresponding values on the log scale are displayed below. The values of $\log(DFL)$ range between $-23.71$ and $-13.98$ for the noise taxa and increase dramatically $\log(DFL) = -6.79$ for the value of the first signal taxon "S_6". The  $\log(DFL)$ values for signal taxa range between $-7.5$ and $-0.12$, which is much larger compared to corresponding statistic values for the noise taxa. In the next step of the algorithm, we construct the  distribution for each taxon "N_1 - N_13" and "S_1 - S_7" to evaluate significance of corresponding taxa $\log(DFL)$ values. 
+
+```{r}
+Order.vec <- pvals_Order(data, res_sim)
+Order_Ind <- rep(1:length(Order.vec))#convert to numeric indicator values
+DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec)
+
+#add log DFL values to the data
+data <- rbind(c(NA, round(log(DFL$DFL), 2)), data)
+rownames(data)[1] <- "log(DFL)"
+#rearrange rows to have DFL below sim-pvalues
+data <- data[c(2,1, 3:nrow(data)),]
+#data
+
+#display DFL and log(DFL) values
+df <- rbind(c(NA,DFL$DFL),c(NA, log(DFL$DFL)))
+df[1,] <- format(df[1,], width = 1, digits = 3, format = "g")
+df[2,] <- round(as.numeric(df[2,]), 2)
+rownames(df) <- c("DFL", "log(DFL)")
+colnames(df)[1]<- "N_1"
+kable(df[,1:8], 
+      format='html',
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 12)
+kable(df[,9:13], 
+      format='html',
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 12)
+kable(df[,14:20], 
+      format='html',
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 12)
+```
+
+4. For  taxon $j = 1, \dots, p-1$
+
+&nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; For  permutation $1, \dots, k$
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Randomly select  $J^*_{j+1} \subset \{1, \dots, p\}$ with $|J^*_{j+1}| =j+1$
+  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Calculate $DFL^*(j+1) = FL(J^*_{j+1}) - FL(J^*)$ 
+
+&nbsp; &nbsp;&nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;end
+
+&nbsp; &nbsp;&nbsp; &nbsp; &nbsp; end
+
+In this step, to build the  distribution for $j$ taxa filtering loss differences using permutaions, we randomly draw $k$ sets $J^*_{j+1}$ taxa labels  and calculate  a sample of corresponding $DFL^*(j+1)$ values. For example, to obtain $k=3$ permutations for  $10$ taxa, we draw sets of size $|J^*_{j+1}| = 9$ and the filtering loss differences for the permuted samples are calculated according to ordering given in rows of the table below $DFL(10) = FL(\{ord_1, \dots, ord_{10}\}) - FL(\{ord_1, \dots, ord_9\})$. In particular, for $k=1$ permutation, 
+$$
+\tiny{
+DFL^*(10) = FL^*(\{N_6, N_{10}, N_2, S_5, N_7, S_7, N_1, S_3, S_1, N_3\}) - FL^*(\{N_6, N_{10}, N_2, S_5, N_7, S_7, N_1, S_3, S_1\})
+} 
+$$
+and 
+for $k=2$ permutation, 
+$$
+\tiny{
+DFL^*(10) = FL^*(\{N_{12}, N_2, N_9, S_2, S_5, N_7, S_7, N_4, N_{13}, N_1\}) - FL^*(\{N_{12}, N_2, N_9, S_2, S_5, N_7, S_7, N_4, N_{13}\})
+} 
+$$
+The values of $DFL^*$ for other permutations and sets of taxa are calculated similarly. 
+
+```{r}
+
+Perm_j_s_il <- function(j, Netw, k,p, p2 = NULL){
+  #Netw = X'X - data matrix with taxa in columns and samples in rows
+  #k - number of permutations used  
+  #create a list of k*p arraments of orders
+  if(is.null(p2)){p2 <- p}
+  labl <- sapply(1:k,function(x) NULL)
+  labl <- lapply(labl,function(x)  sample(1:p,p2))
+  FL_j <- sapply(labl,DiffFiltLoss_j, Netw = Netw, j=j)
+  return(list(labl = labl, FL_j = FL_j))
+}
+
+#we illustrate computation of the first k=3 permutations for each taxon
+p <- dim(X)[2] 
+Netw <- t(X)%*%X
+full_norm <- tr(t(Netw)%*%Netw)#this is full norm value
+#For each taxon j, create a distribution of its DFL's by permuting the labels 
+res_all <- lapply(1:(p-1),function(x) x)
+FL <- lapply(res_all, function(x) Perm_j_s_il(j = x, Netw =Netw, k=3, p =p, p2 = x+1))
+#extract every 2nd subelement for each element of list FL to get FL_j values
+FL_j <- lapply(FL, "[[", 2)
+#divide by the full matrix norm values to get DFL*(j+1) values
+res_pres <- lapply(FL_j, function(x) {x/full_norm})
+
+#extract every 1st subelement for each element of list of selected labels
+labl <- lapply(FL, "[[", 1)
+labl<- lapply(labl, function(x) matrix(unlist(x), ncol = 3, byrow = FALSE))
+
+#take sets of 10 and 17 taxa
+T10 <- apply(labl[[9]], 2, function(x) Order.vec[x])
+T17 <- apply(labl[[16]], 2, function(x) Order.vec[x])
+df <- qpcR:::cbind.na(T10, T17)
+a <- paste0("k_", 1:3)
+b <- paste0("T_", c(10,17))
+colnames(df) <- paste0(rep(b, each = 3),a )
+df <- rbind(round(log(c(res_pres[[9]], res_pres[[16]])),2), df)
+rownames(df) <- c("log(DFL*)", paste0("ord_", 1:17))
+
+kable(df, 
+      format='html',
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 12)
+```
+
+5. For  taxon $j = 1, \dots, p-1$
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Using quantile matching  fit the normal distribution to the
+  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;logarithm of the sample $DFL^*(j+1), j = 1, \dots, p-1$  to obtain 
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;the null distribution $X_j \sim \mbox{SN}(\widehat\xi_j, \widehat\omega_j^2, \widehat\alpha_j)$
+
+&nbsp; &nbsp;&nbsp; &nbsp; &nbsp; end
+
+For example, to estimate the parameters of  $10$ taxa distribution, we would use $\log(DFL^*)$ values from the first $3$ columns in the above table, namely "T_10k_1", "T_10k_2", "T_10k_3", to fit Skew Normal distribution using quantile matching method to the sample $\{-34.49, -27.55, -22.02\}$. Similarly, for the ditribution of $17$ taxa, we use sample $\{-22.29, -24.23, -23.89\}$.
+
+In this example, we increase the number of permutations to $k=1000$, which is necessary to get a reasonable distribution for the values of $DFL^*(j+1)$. The histogram of $10$ taxa distribution is given below with the blue line indicating Skew Normal fit. Because we have only $20$ taxa in this example, the distribution fit is not as accurate as for the larger number of taxa, but nevertheless, it illustrates the idea.  
+
+```{r}
+#distribution based on k = 1000 permutations
+dfl_distr <- sampl_distr(X = X, k=1000, sample = FALSE)
+
+#distribution fit to skew-normal 
+lfl <- lapply(dfl_distr, function(x) log(x[!x==0]))
+lp <- list(xi = mean(lfl[[1]]), omega = sd(lfl[[1]]), alpha = 1.5)
+fit <- lapply(lfl, function(x) qmedist(x, "sn", probs=c(0.10, 0.25, 0.5), start=lp))  
+est <- lapply(fit, function(x) x$estimate)
+
+#histogram of log(DFL^*) values for the 10th taxon
+i=9
+lfl <- data.frame(log(dfl_distr[[i]][!dfl_distr[[i]]==0]))
+    if(length(dfl_distr[[i]][dfl_distr[[i]]==0])>0){
+      print(paste("taxon", i, "number of zeroes = ", 
+                  length(dfl_distr[[i]][dfl_distr[[i]]==0])))}
+    names(lfl) <- c("DFL")
+    #plot histogram
+    x = "DFL"
+    ord_map = aes_string(x = x)
+    #hist <- ggplot(lfl, ord_map) + geom_histogram()
+    hist <- ggplot(lfl, ord_map) + geom_histogram(bins = 30, aes(y=..density..), 
+                                                  col = "red", fill = "green", alpha =0.2)+
+      theme(panel.background = element_rect(fill = "white"), 
+            panel.grid.major = element_line(colour = "grey90"),
+            axis.text.x  = element_text( size=10))+
+      ggtitle("") + xlab("log differences in filtering loss") + ylab("Density")
+
+#add skew-normal fit
+hist <- hist + stat_function(fun = dsn, 
+            args = list(xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3]), colour="blue")
+hist   
+```
+
+The estimated distribution parameters are given as follows.
+
+```{r}
+#estimated parameters are
+df <- data.frame(xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3])
+rownames(df) <- "10 taxa parameters"
+kable(df, 
+      format='html',
+      digits = 2,
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 12)
+```
+
+6. For  taxon $j = 1, \dots, p-1$
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Calculate the p-value $p_j$ for  $DFL(j+1), j = 1, \dots, p-1$ as
+  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;$p_j := P[X_j > \log\{DFL(j+1)\}]$ 
+
+
+&nbsp; &nbsp;&nbsp; &nbsp; &nbsp; end
+
+
+The  $log(DFL)$ value for the $10$th taxon in simultaneous p-values ordering was calculated in step 3 as 
+
+```{r}
+#the value of log(DFL) for the 10th taxon is
+round(log(DFL$DFL[[9]]),2)
+```
+
+
+Therefore, we calculate the $10$th taxon  p-value as
+$$
+p_{10} = P[X_{10} > 18.74],\hspace{5mm} \mbox{where}~~X_{10} \sim \mbox{SN}(\widehat\xi_{10} = -18.30, \widehat\omega_{10}^2 = 7.11^2, \widehat\alpha_{10} = -0.03).
+$$
+
+```{r, echo = TRUE}
+1 - psn(x=-18.74, xi = -18.30, omega = 7.1, alpha = -0.03)
+```
+
+
+
+```{r}
+#all p-values
+    for(i in 1:(p-1)){
+      pvals[i] <- 1 - psn(x=log(DFL$DFL[i]), 
+                      xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3])}
+
+data <- rbind(c(NA, round(pvals,2)), data)
+rownames(data)[1] <- "pvalues_perm"
+
+```
+
+6. Average $3$ subsequent p-values
+
+The $4$ rows of the example OTU table below combines taxa  PERFect simultaneous p-values, their corresponding $log(DFL)$ values, raw PERFect permutation p-values, and their corresponding averaged values. As expected, the p-values of noise taxa are large and the p-values for the signal taxa are small.
+
+```{r}
+pvals_avg <- rollmean(pvals, k=3, align="left",  fill=NA )
+#replace na's with original values
+pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
+  
+data <- rbind(c(NA, round(pvals_avg, 2)), data)
+rownames(data)[1] <- "pvalues_perm_avg"
+
+#rearrange rows
+data <- data[c(3,4,2,1, 5:nrow(data)),]
+
+#nice display
+kable(data[,1:13], 
+      format='html', 
+      digits=2, 
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 10) 
+
+kable(data[,14:20], 
+      format='html',
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 10)
+```
+
+7. Filter the set of taxa $J_j$ with the first p-value such that $p_{j+1} \leq \alpha$
+
+The OTU table above indicates that the first significantly small averaged p-value is $p_{14}= 0.01 \leq 0.1 :=\alpha$, which occurs at the first signal taxon "S_6". Thus the filtered set of taxa $J_{13} = \{N_1, N_3, N_4, N_5, N_6, N_7, N_2, N_8, N_9, N_{11}, N_{10}, N_{12}, N_{13} \}$. Therefore, we preserve the last $7$ columns in the final data set that correspond to the true signal taxa.  
+
+```{r}
+#select taxa that are kept in the data set at significance level alpha
+  Ind <- min(which(pvals_avg <=0.1))
+  #if jth DFL is significant, then throw away all taxa 1:j 
+  filtX <- X[,-(1:Ind)]
+  
+kable(filtX, 
+      format='html',
+      row.names=TRUE,
+      escape = FALSE,
+      padding=-3L) %>% kable_styling(font_size = 12)
+  
+```
+
+
