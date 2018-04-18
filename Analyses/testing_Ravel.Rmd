@@ -1,0 +1,330 @@
+---
+title: "PERFect: Ravel vaginal microbiome data analysis"
+author: "Ekaterina Smirnova"
+date: "`r date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+vignette: >
+  %\VignetteIndexEntry{Simulations}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+---
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo = FALSE,fig.align='center')
+```
+
+
+
+```{r required_libraries}
+
+rm(list=ls())
+
+library(Matrix)
+library(devtools)
+require(ggplot2)
+require(sn)
+require(fitdistrplus)
+require(psych) 
+library(PERFect)
+library(dirmult)
+library(HMP)
+library(knitr)
+library(gridExtra)
+library(grid)
+library(reshape2)
+library(zoo)
+
+set.seed(12341)
+setwd("~/Dropbox/PERFect/RCode/")
+pathtoplots <- "~/Dropbox/PERFect/RCode/Responses/Plots/"
+```
+
+1. *Ravel vaginal microbiome data*.
+We apply traditional and PERFect filtering methods to a vaginal microbiome study of a cohort of $396$ reproductive age women previously published in  Ravel et al. (2011), where data and details on data collection and preprocessing are also available. The goal of the study was to understand the role and ultimate function of vaginal microbiota in reducing risk of infectious diseases and to identify factors leading to disease susceptibility. Microbiome data were obtained by  pyrosequencing of barcoded 16S rRNA genes; in this data set $247$  taxa were identified. 
+
+
+
+```{r}
+#Input mock ravel data set
+data(ravel)
+Counts <- as.matrix(ravel$Counts)
+
+```
+
+
+##Results
+
+
+```{r}
+#function to output results for each simulation run
+resSummary <-function(X, filtX,  time = NA){
+  
+  rank_pvals = NULL 
+  rank_pres = NULL
+  ntotal <- dim(X)[2]
+  npres <- dim(filtX)[2] #number of taxa left
+  
+  pfilt <- (ntotal - npres)/ntotal #percentage of taxa filtered
+
+  #combine into results vector
+  res <- c(ntotal, npres, pfilt)
+  names(res) <- c("ntotal", "npres", "pfilt")
+  
+  return(list(res = res,  time = time))
+  
+}
+```
+
+
+1. Simultaneous PERFect with skew-normal distribution and NP ordering. 
+
+```{r}
+
+#########################
+#quantiles from fit a
+##########################
+start <- Sys.time()
+res_sim <- PERFect_sim(X=Counts)
+end <-  Sys.time()-start
+summary_sim <- resSummary(X = Counts, filtX = res_sim$filtX, time = end)
+
+
+```
+
+
+
+2. Permutation PERFect with skew-normal distribution NP ordering.
+
+
+```{r}
+
+start <- Sys.time()
+res_perm_np <- PERFect_perm(X=Counts)
+(end <-  Sys.time()-start)
+
+summary_perm_np <- resSummary(X = Counts, filtX = res_perm_np$filtX, time = end)
+```
+
+3. Permutation perfect with simultaneous p-values ordering from simultaneous PERFect with Skew Normal fit 
+
+
+```{r}
+
+start <- Sys.time()
+res_perm_pvals <- PERFect_perm_reorder(X=Counts,  Order = "pvals",  
+                                       pvals_sim = res_sim, res_perm = res_perm_np)
+end <-  Sys.time()-start
+#results for permutation PERFect with NP ordering
+summary_perm_pvals <- resSummary(X = Counts, filtX = res_perm_pvals$filtX, time = end)
+
+
+```
+
+
+5. Decontam package results
+
+Not available
+
+6. Traditional Filtering Rule 1
+
+```{r}
+start <- Sys.time()
+#traditional filtering
+res_trad_r1 <- TraditR1(Counts, thresh =5)
+end <-  Sys.time()-start
+#results for traditional filtering with NP ordering
+summary_trad_r1 <- resSummary(X = Counts, filtX = res_trad_r1, time = end)
+
+```
+
+7. Traditional Filtering Rule 2
+
+```{r}
+
+#traditional filtering
+start <- Sys.time()
+res_trad_r2 <- TraditR2(Counts)
+end <-  Sys.time()-start
+#results for traditional filtering with NP ordering
+summary_trad_r2 <- resSummary(X = Counts, filtX = res_trad_r2,  time = end)
+
+```
+
+#Table of results comparison
+
+1. Number of taxa present
+
+```{r}
+df <- rbind(summary_sim$res,
+            summary_perm_np$res,
+            summary_perm_pvals$res,
+            summary_trad_r1$res, summary_trad_r2$res)
+rownames(df) <- c("PERFect_sim", 
+                  "PERFect_perm_np",
+                  "PERFect_perm_pvals",
+                  "Trad_R1", "Trad_R2")
+df[,c(3)] <- round(df[,c(3)], 4)*100
+
+
+#kable(df,format="latex",booktabs=TRUE,caption="Sourcetracker results: estimated proportion of taxa from each environment in NICU samples (Knights et al, 2011)") %>% kable_styling(latex_options = c("striped", "hold_position"))
+
+names_spaced <- c(
+   'Total number<br/>of taxa', '# of taxa <br/> preserved', 
+  'Percentage of <br/> filtered taxa')
+
+kable(df, 
+      format='html', 
+      digits=2, 
+      row.names=TRUE, 
+      align='lcc', 
+      col.names = names_spaced,
+      escape = FALSE) 
+
+```
+
+2. Running time for each method
+
+```{r}
+df <- data.frame(summary_sim$time, summary_perm_np$time, 
+                 summary_trad_r1$time, summary_trad_r2$time)
+names(df) <- c("Simultaneous PERFect", "Permutation PERFect", 
+               "Traditional Rule 1", "Traditional Rule 2")
+
+names_spaced <- c(
+   'PERFect<br/> Simultaneous', 'PERFect<br/> Permutation', 
+    'Traditional<br/> Rule 1', 'Traditional<br/> Rule 2')
+
+kable(df, 
+      format='html', 
+      digits=4, 
+      row.names=FALSE, 
+      align='ccccc', 
+      col.names = names_spaced,
+      escape = FALSE) 
+
+
+```
+
+#Taxa that agree on all methods
+
+```{r}
+
+commontaxa <- Reduce(intersect, list(colnames(res_sim$filtX),
+                       colnames(res_perm_np$filtX),
+                       colnames(res_perm_pvals$filtX),
+                       colnames(res_trad_r1),
+                       colnames(res_trad_r2)))
+
+length(Reduce(intersect, list(colnames(res_perm_pvals$filtX), colnames(res_trad_r1),colnames(res_trad_r2))))
+       
+commontaxa
+```
+
+
+#Comparison with other taxa orderings for supplementary materials
+
+Simultaneous PERFect results with different orderings.
+
+```{r}
+#p-values ordering
+res_sim_pvals <- PERFect_sim(X=Counts, Order = "pvals", pvals_sim = res_sim)
+summary_sim_pvals <- resSummary(X = Counts, filtX = res_sim_pvals$filtX, time = end)
+
+#NC ordering
+res_sim_nc <- PERFect_sim(X=Counts, Order = "NC")
+summary_sim_nc <- resSummary(X = Counts, filtX = res_sim_nc$filtX, time = end)
+
+#NCw ordering
+res_sim_ncw <- PERFect_sim(X=Counts, Order = "NCw")
+summary_sim_ncw <- resSummary(X = Counts, filtX = res_sim_ncw$filtX, time = end)
+
+```
+
+Permutation PERFect results with different orderings.
+
+```{r}
+
+#NC ordering
+res_perm_nc <- PERFect_perm_reorder(X=Counts, Order = "NC", res_perm = res_perm_np)
+summary_perm_nc <- resSummary(X = Counts, filtX = res_perm_nc$filtX, time = end)
+
+#NCw ordering
+res_perm_ncw <- PERFect_perm_reorder(X=Counts, Order = "NCw", res_perm = res_perm_np)
+summary_perm_ncw <- resSummary(X = Counts, filtX = res_perm_ncw$filtX, time = end)
+
+```
+
+Comparison table for the paper
+
+```{r}
+df <- rbind(summary_sim$res,
+            summary_sim_pvals$res,
+            summary_sim_nc$res,
+            summary_sim_ncw$res,
+            summary_perm_np$res,
+            summary_perm_pvals$res,
+            summary_perm_nc$res,
+            summary_perm_ncw$res)
+rownames(df) <- c("PERFect_sim_np",
+                  "PERFect_sim_pvals",
+                  "PERFect_sim_nc",
+                  "PERFect_sim_ncw",
+                  "PERFect_perm_np",
+                  "PERFect_perm_pvals",
+                  "PERFect_perm_nc",
+                  "PERFect_perm_ncw")
+df[,c(3)] <- round(df[,c(3)], 4)*100
+
+
+names_spaced <- c(
+   'Total number<br/>of taxa', '# of taxa <br/> preserved', 
+  'Percentage of <br/> filtered taxa')
+
+kable(df, 
+      format='html', 
+      digits=2, 
+      row.names=TRUE, 
+      align='lcc', 
+      col.names = names_spaced,
+      escape = FALSE) 
+
+commontaxa <- Reduce(intersect, list(colnames(res_sim$filtX),
+                       colnames(res_sim_pvals$filtX), 
+                       colnames(res_sim_nc$filtX),
+                       colnames(res_sim_ncw$filtX),
+                       colnames(res_perm_np$filtX),
+                       colnames(res_perm_pvals$filtX),
+                       colnames(res_perm_nc$filtX),
+                       colnames(res_perm_ncw$filtX)))
+length(commontaxa)
+```
+
+
+#p-values plots
+
+```{r}
+p_pvals <- pvals_Plots(PERFect = res_perm_pvals, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.1)
+p_pvals$plot
+ggsave(paste0(pathtoplots, "pvals.jpg"), p_pvals$plot)
+```
+
+
+#Taxa orderings comparison
+
+```{r}
+df <- data.frame(NP = rev(NP_Order(Counts)), 
+                       pvals = rev(pvals_Order(Counts, res_sim)),
+                       NC = rev(NC_Order(Counts)), 
+                       NCw = rev(NCw_Order(Counts)))
+rownames(df) <- df$NP
+
+#order by NP orderings
+df_order <- apply(df, 2, function(x) match(df$NP, x))
+rownames(df_order) <- rownames(df)
+write.csv(df_order, file = paste0(pathtoplots, "Order.csv"))
+```
+
