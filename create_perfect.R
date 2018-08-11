@@ -1,5 +1,5 @@
 library(devtools)
-setwd("~/Dropbox/PERFect/PERFect") # change me
+setwd("~/Dropbox/PERFect/PERFect/") # change me
 build()
 install()
 
