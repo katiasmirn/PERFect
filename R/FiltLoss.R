@@ -1,20 +1,28 @@
 ############################
 #filtering loss 
 ############################
-FiltLoss <- function(X, Order, type = c("Ind", "Cum"), Plot = TRUE){
+FiltLoss <- function(X, Order = "NP", Order.user = NULL, type = "Cumu", Plot = TRUE){
   #X - data matrix
   #type = Ind - only jth taxon removed to calculate FL
   #type = Cm - 1:j tax are removed to calculate FL
   p <- dim(X)[2]#total #of taxa
   Norm_Ratio <- rep(1, p)
   X <- as.matrix(X)
-  X <- X[,Order] #reorder columns
-  Order_Ind <- 1:length(Order) 
+  
+  #Order columns by importance
+  if(Order == "NP") {Order.vec <- NP_Order(X)}
+  if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
+  if(Order == "NC"){Order.vec <- NC_Order(X)}
+  if(Order == "NCw"){Order.vec <- NCw_Order(X)}
+  else if (!is.null(Order.user)) {Order.vec = Order.user} #user-specified ordering of columns of X
+  X <- X[,Order.vec]#properly order columns of X
+  
+  Order_Ind <- 1:length(Order.vec) 
   Netw <- t(X)%*%X
   
   #Taxa at the top of the list have smallest number of connected nodes
   for (i in 1:p){
-    if (type == "Cum") {Ind <- Order_Ind[-(1:i)]}
+    if (type == "Cumu") {Ind <- Order_Ind[-(1:i)]}
     else{Ind <- Order_Ind[-i]}
     
     #define matrix X_{-J}'X_{-J} for the choice of cumulative or individual filtering loss
@@ -28,9 +36,9 @@ FiltLoss <- function(X, Order, type = c("Ind", "Cum"), Plot = TRUE){
   if(Plot == TRUE){
     
     #Plot Full Norm reduction 
-    df <- data.frame(Order, rep(1:length(FL)), FL)
+    df <- data.frame(Order.vec, rep(1:length(FL)), FL)
     names(df)[2] <- "x"
-    Lab <- 1:length(Order)
+    Lab <- 1:length(Order.vec)
     df <- cbind(Lab, df)
     
     #Plots      

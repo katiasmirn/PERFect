@@ -13,14 +13,13 @@ NCw_Order(Counts)
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{Counts}{
-OTU COUNTS table, where taxa are columns and samples are rows of the table. Should be in data frame format with columns corresponding to taxa names. Must be a data frame, where taxa are column names.
-}
+OTU COUNTS table, where taxa are columns and samples are rows of the table. It should be a in data frame format with columns corresponding to taxa names.}
 }
 \details{
 %%  ~~ If necessary, more details than the description above ~~
 }
 \value{
-  \item{NCW}{Taxa names in increasing  order of the weighted number of connected taxa}
+  \item{NCW}{Taxa names in increasing  order of the weighted number of connected taxa.}
 
 }
 \references{
@@ -39,15 +38,13 @@ Ekaterina Smirnova
 %% ~~objects to See Also as \code{\link{help}}, ~~~
 %}
 \examples{
-require(Matrix)
-require(ggplot2)
-require(sn)
-require(fitdistrplus)
-require(psych)
-
 data(mock2)
+# Proportion data matrix
 Prop <- mock2$Prop
+
+# Counts data matrix
 Counts <- mock2$Counts
+
 #arrange counts in order of increasing number of samples taxa are present in 
 NCw <- NCw_Order(Counts)
 }

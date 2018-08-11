@@ -1,1 +1,9 @@
 exportPattern("^[[:alpha:]]+")
+
+import(Matrix) 
+import(sn)
+import(fitdistrplus)
+import(ggplot2)
+importFrom(psych,tr)
+importFrom(zoo,rollmean)
+

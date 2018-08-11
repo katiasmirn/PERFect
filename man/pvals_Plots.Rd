@@ -8,13 +8,14 @@ Plots of PERFect p-values
 Graphical representation of p-values obtained by running PERFect_sim() or  PERFect_perm() for jth taxon colored by quantile values of individual filtering loss 
 }
 \usage{
-pvals_Plots(PERFect, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha = 0.05)
+pvals_Plots(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha = 0.05)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{PERFect}{Output of PERFect_sim() or PERFect_perm() function}
-  \item{quantiles}{Quantile values  for coloring, these are set to 25\%, 50\%, 0.8\% and 0.9\% percentiles of the ndividual filtering  loss values}
-  \item{alpha}{alpha level of the test}
+  \item{PERFect}{Output of PERFect_sim() or PERFect_perm() function.}
+  \item{X}{OTU table, where taxa are columns and samples are rows of the table. It should be a in data frame format with columns corresponding to taxa names.}
+  \item{quantiles}{Quantile values  for coloring, these are set to 25\%, 50\%, 80\% and 90\% percentiles of the individual filtering  loss values.}
+  \item{alpha}{Alpha level of the test, set to 0.1 by default.}
 }
 %\details{
 %%  ~~ If necessary, more details than the description above ~~
@@ -35,11 +36,27 @@ Ekaterina Smirnova
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-See Also as \code{\link{PERFect_sim}}, ~\code{\link{PERFect_perm}}
+\code{\link{PERFect_sim}}, \code{\link{PERFect_perm}}
 }
-%\examples{
+\examples{
 
-%}
+data(mock2)
+# Proportion data matrix
+Prop <- mock2$Prop
+
+# Counts data matrix
+Counts <- mock2$Counts
+dim(Counts) # 240x46
+
+# Perform simultaenous filtering of the data
+res_sim <- PERFect_sim(X=Counts)
+dim(res_sim$filtX)      # 240x10, removing 36 taxa
+colnames(res_sim$filtX) # signal taxa
+
+#permutation perfect colored by FLu values
+pvals_Plots(PERFect = res_sim, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
+
+}
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
 %\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")

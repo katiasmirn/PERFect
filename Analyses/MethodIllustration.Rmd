@@ -38,8 +38,8 @@ library(zoo)
 library(kableExtra)
 
 set.seed(12341)
-#setwd("C:/Users/Quy/Dropbox/Quy/PERFect/PERFect-master/R")#change me
-setwd("~/Dropbox/PERFect/RCode/")
+#setwd("C:/Users/Kwee/Dropbox/Quy/PERFect/PERFect-master/R")#change me
+setwd("~/Dropbox/PERFect/RCode/")#change me
 
 ```
 
@@ -371,7 +371,7 @@ kable(df,
 
 Here, after $k$ values of $\log(DFL^*)$ for each group of $j$ taxa are obtained, they are fit to a Skew Normal distribution with three parameters $\xi, \omega$ and $\alpha$ using quantile matching method.  For example, to estimate the parameters of $5$ taxa distribution, we would use $\log(DFL^*)$ values from the $6$ columns in the table above to fit Skew Normal distribution to the sample $\{-21.25,	-23.71,	-4.7,	-13.98,	-3.95,	-6.79\}$.
 
-This step is necessary to disentangle the null and alternative distributions contributing to the observed permutation distribution. When we use $k$ permutations to build the reference distribution of filtering loss differences, it always includes both the values from the null and from the alternative hypotheses as illustrated above in the example of step 4 of the algorithm. Therefore, we need to make the assumption that the resulting permutation distribution is a mixture of observed differences under the null and alternative distributions. The p-value is a measure of how extreme a value of statistic (here $DFL(5)$) is relative to the null distribution. If we use fully non-parametric approach and simply construct the p-value as the proportion of times when $\log DFL(5)$ is above  $\log DFL^*(5)$, then we use mixture of null and alternative as the null distribution. Under this approach, the p-value would not be appropriately calculated and we may loose more taxa than necessary.
+This step is necessary to disentangle the null and alternative distributions contributing to the observed permutation distribution. When we use $k$ permutations to build the reference distribution of filtering loss differences, it always includes both the values from the null and from the alternative hypotheses as illustrated above in the example of step 4 of the algorithm. Therefore, we need to make the assumption that the resulting permutation distribution is a mixture of observed differences under the null and alternative distributions. The p-value is a measure of how extreme a value of statistic (here $DFL(5)$) is relative to the null distribution. If we use fully non-parametric approach and simply construct the p-value as the proportion of times when $\log DFL(5)$ is above  $\log DFL^*(5)$, then we use mixture of null and alternative as the null distribution. Under this approach, the p-value would not be appropriately calculated and we may lose more taxa than necessary.
 
 ```{r}
 #distribution based on k = 1000 permutations

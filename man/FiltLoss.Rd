@@ -8,26 +8,19 @@ Filtering Loss
 Sequential filtering loss calculation for removing a set of J_j taxa for J= 1, ..., p.
 }
 \usage{
-FiltLoss(X, Order, type = c("Ind", "Cum"), Plot = TRUE)
+FiltLoss(X, Order = "NP", Order.user = NULL, type = "Cumu", Plot = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{X}{
-An n x p OTU table, where p taxa are columns and n samples are rows of the table. Should be in data frame format with columns corresponding to taxa names.
-}
-  \item{Order}{
-Taxa column order  corresponding to taxa importance arrangment. Can be either character vector corresponding to taxa names recorded in column names of X or a numeric vector with  column indices.
-}
-  \item{type}{
-Type of filtering loss calculation. 
+  \item{X}{OTU table, where taxa are columns and samples are rows of the table. It should be a in data frame format with columns corresponding to taxa names.}
+  \item{Order}{Taxa column order corresponding to taxa importance arrangment. The default ordering is the number of occurrences (NP) of the taxa in all samples. Other types of order are p-value ordering, number of connected taxa and weighted number of connected taxa, denoted as "pvals","NC","NCw" respectively. More details about taxa ordering are described in Smirnova et al. User can also specify their preference order with Order.user.}
+  \item{type}{Type of filtering loss calculation. 
 
 "Ind" -- individual taxon's filtering loss FL_u(j)
 
-"Cum" -- cumulative filtering loss FL(J) due to removing a set of taxa J
+"Cumu" -- cumulative filtering loss FL(J) due to removing a set of taxa J
 }
-  \item{Plot}{
-A binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss.
-}
+  \item{Plot}{A binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss.}
 }
 \details{
 The individual filtering loss due to removing one taxon j is defined as 
@@ -36,7 +29,7 @@ FL_u(j)= 1- (||X^T_{-j} X_{-j}||_F^2/||X^TX||_F^2),
 
 where X_{-j} is the matrix X without column corresponding to jth taxon and ||Z||_F is the Frobenious norm of a matrix Z.
 
-The cumulative filtering loss due to removing a set of taxa 
+The cumulative filtering loss due to removing a set of taxa is defined as
 
 FL(J)= 1- (||X^T_{-J}  X_{-J}||_F^2\||X^TX||_F^2),
 
@@ -61,25 +54,30 @@ Ekaterina Smirnova
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-See Also as \code{\link{DiffFiltLoss}}
+\code{\link{DiffFiltLoss}}
 }
 \examples{
-require(Matrix)
-require(ggplot2)
-require(sn)
-require(fitdistrplus)
-require(psych)
-
 
 data(mock2)
+
+# Proportion data matrix
 Prop <- mock2$Prop
+
+# Counts data matrix
 Counts <- mock2$Counts
+
 #arrange counts in order of increasing number of samples taxa are present in 
 NP <- NP_Order(Counts)
+
+#obtain numeric column order corresponding to taxa importance arrangment
+Order_Ind <- match(NP, names(Prop))
+
 #Calculate cumulative filtering loss
-FL <- FiltLoss(X=Prop, Order = Order, type = "Cum", Plot = TRUE)
+FL <- FiltLoss(X=Prop, Order = "NP", type = "Cumu", Plot = TRUE)
+
 #Differences in filtering loss values
 FL$FL
+
 #Plot of the differences in filtering loss
 FL$p_FL
 }

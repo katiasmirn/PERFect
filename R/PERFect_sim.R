@@ -120,7 +120,7 @@ PERFect_sim <- function(X,  Order = "NP",   Order.user = NULL,
   names(pvals) <- names(DFL$DFL)
   
   #smooth p-values
-  pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )
+  pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )#from zoo package
   #replace na's with original values
   pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
   

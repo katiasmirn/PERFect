@@ -5,7 +5,7 @@
 Difference in filtering loss
 }
 \description{
-This function calculates difference in filtering loss for the first j taxa
+This function calculates difference in filtering loss for the first j taxa.
 }
 \usage{
 DiffFiltLoss_j(Perm_Order, Netw, j)

@@ -10,7 +10,7 @@ pvals_Plots <- function(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.
   taxa_filt <- Order_pvals[!(Order_pvals %in% colnames(PERFect$filtX))]
   taxa <- max(which(taxa_filt %in% Order_pvals))
   #calculate FLu values
-  res_FLu <- FiltLoss(X = X[,Order_pvals], Order = Order_pvals, type =  "Ind", Plot = TRUE)$FL
+  res_FLu <- FiltLoss(X = X[,Order_pvals], Order.user = Order_pvals, type =  "Ind", Plot = TRUE)$FL
   #create a color scale for p-values plot
   FLu_vals <- res_FLu
   breaks <- quantile(res_FLu, quantiles)

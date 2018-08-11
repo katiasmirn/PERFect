@@ -1,0 +1,355 @@
+---
+title: "Analaysis of Metagenomics data from Salter 2014"
+author: "BJC"
+date: "11/15/2017"
+output: html_document
+---
+
+Reagent and laboratory contamination can critically impact sequence-based microbiome analyses, Salter et al., 2014, https://doi.org/10.1186/s12915-014-0087-z.
+
+Load needed packages:
+```{r load}
+library(decontam);packageVersion("decontam")
+library(ggplot2);packageVersion("ggplot2")
+library(phyloseq);packageVersion("phyloseq")
+library(dada2);packageVersion("dada2")
+library(phyloseq);packageVersion("phyloseq")
+library(reshape2);packageVersion("reshape2")
+library(gridExtra);packageVersion("gridExtra")
+```
+
+## Process 16S Amplicon Data
+
+This section analyzes the Salter et al. dilution-series amplicon sequencing data: "Samples for the S. bongori culture 16S rRNA gene profiling ... are deposited under ENA project accession EMBL: ERP006737; sample details and individual accession numbers are detailed in Additional file 1: Table S1a."
+
+Once downloaded, the amplicon sequencing data was processed using the dada2 R package, producing a table of exact amplicon sequence variants (ASV). Those processed files are included as part of this reproducible analysis in the `Salter16S` directory. In addition, the DADA2 processing steps are included here as well for completeness, but commented out:
+
+Read in the sample metadata:
+```{r}
+path.ampli <- "~/Dropbox/PERFect/RCode/DecontamManuscript-master/Analyses/Salter16S" # CHANGE ME
+df.ampli <- read.csv(file.path(path.ampli, "Salter1.csv"), header=TRUE, stringsAsFactors = FALSE)
+rownames(df.ampli) <- df.ampli$Run.accession
+```
+
+Process the forward reads with DADA2 (must be downloaded from ENA):
+```{r dada2}
+#path.fastq <- "~/Salter"
+#fnFs <- list.files(path.fastq, pattern="_1.fastq.gz", full.names=TRUE)
+#fastqFs <- fnFs[df.ampli$Run.accession]
+#fwdFs <- file.path(path.fastq, "FWD", basename(fastqFs))
+#names(fwdFs) <- names(fastqFs)
+#outF <- filterAndTrim(fastqFs, fwdFs, rm.phix=TRUE, truncLen=240, maxEE=3, multithread=TRUE)
+#drp <- derepFastq(fwdFs)
+#err <- learnErrors(drp, multithread=TRUE)
+#dd <- dada(drp, err=err, pool=TRUE, multithread=TRUE)
+#sta <- makeSequenceTable(dd)
+#st <- removeBimeraDenovo(sta, method="pooled", verbose=TRUE)
+#tax <- assignTaxonomy(st, "~/tax/silva_nr_v123_train_set.fa.gz", multithread=TRUE)
+#saveRDS(st, file.path(path, "st.rds"))
+#saveRDS(tax, file.path(path, "tax.rds"))
+```
+
+The RDS objects storing the output of the DADA2 processing are included as part of this reproducible analysis in the `Salter16S` directory.
+
+Read in the DADA2-processed ASV tables and taxonomnic assignments:
+```{r}
+st.ampli <- readRDS(file.path(path.ampli, "st.rds"))
+tax.ampli <- readRDS(file.path(path.ampli, "tax.rds"))
+ft.ampli <- sweep(st.ampli, 1, rowSums(st.ampli), "/")
+df.ampli$Dilution.number[df.ampli$Dilution.number == "0 (original culture)"] <- "0"
+df.ampli$Dilution.number[df.ampli$Dilution.number == "Negative control"] <- "Neg"
+conc.dict <- c("0"=1e3, "0 (original culture)"=1e3, "1"=1e2, "2"=1e1, "3"=1, "4"=1, "5"=1, "Neg"=1)
+df.ampli$conc <- conc.dict[df.ampli$Dilution.number]
+identical(rownames(df.ampli), rownames(st.ampli)) # TRUE
+ps.ampli <- phyloseq(otu_table(st.ampli, taxa_are_rows=FALSE), tax_table(tax.ampli), sample_data(df.ampli))
+```
+
+Plot read numbers for each samples:
+```{r}
+p.depth.ampli <- ggplot(data=df.ampli, aes(x=Dilution.number, y=Post.processing.read.count, color=Dilution.number)) + 
+                 geom_point() + facet_grid(PCR.cycles~Processing.Institute) + 
+                 theme_bw() + guides(color=FALSE)
+print(p.depth.ampli)
+```
+
+Total read numbers drop off with dilution for 20 PCR cycles, but 40 PCR cycles produces significant numbers of reads even in the Negative control.
+
+Identify contaminants using the frequency method, both pooling all samples and when each sequencing center is identified as a batch:
+```{r}
+ampli.min <- isContaminant(ps.ampli, method="frequency", conc="conc", batch="Processing.Institute", batch.combine="minimum", normalize=TRUE)
+ampli.pool <- isContaminant(ps.ampli, method="frequency", conc="conc", normalize=TRUE)
+```
+
+Plot the removal of contaminants as a function of the classification threshold:
+```{r}
+# Determine the total number of contaminant (i.e. non-Salmonealla) reads in each sample
+head(unname(tax.ampli)) # First 3 are real SVs from the S. bongori strain
+tot.ampli <- sum(st.ampli[,c(-1,-2,-3)])
+
+threshs <- c(0, 0.001, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+fracdf.ampli <- data.frame(pooled=sapply(threshs, function(t) sum(st.ampli[,ampli.pool$p<t], na.rm=TRUE)/tot.ampli),
+                     batched=sapply(threshs, function(t) sum(st.ampli[,ampli.min$p<t], na.rm=TRUE)/tot.ampli),
+                     threshold=threshs)
+svdf.ampli <- data.frame(pooled=sapply(threshs, function(t) sum(ampli.pool$p<t, na.rm=TRUE)/(ncol(st.ampli)-3)),
+                     batched=sapply(threshs, function(t) sum(ampli.min$p<t, na.rm=TRUE)/(ncol(st.ampli)-3)),
+                     threshold=threshs)
+mfrac.ampli <- melt(fracdf.ampli, id.vars="threshold", value.name="Fraction.reads", variable.name="Method")
+msv.ampli <- melt(svdf.ampli, id.vars="threshold", value.name="Fraction.SVs", variable.name="Method")
+p.rd.ampli <- ggplot(data=mfrac.ampli, aes(x=threshold, y=Fraction.reads, color=Method)) + 
+  geom_line() + geom_point() + xlim(0, 0.5) + ylim(0,1) +
+  scale_color_manual(values=c("pooled"="blue", "batched"="red")) +
+  theme_bw() + xlab("P-value Threshold") + ylab("Reads IDed as Contaminants\n(Proportion)") +
+  geom_hline(yintercept=(sum(st.ampli[,colSums(st.ampli>0)>=2])-sum(st.ampli[,c(1,2,3)]))/tot.ampli, linetype="dashed")
+p.sv.ampli <- ggplot(data=msv.ampli, aes(x=threshold, y=Fraction.SVs, color=Method)) + 
+  geom_line() + geom_point() + xlim(0, 0.5) + ylim(0,1) +
+  scale_color_manual(values=c("pooled"="blue", "batched"="red")) +
+  theme_bw() + xlab("P-value Threshold") + ylab("ASVs IDed as Contaminants\n(Proportion)") +
+  geom_hline(yintercept=(sum(colSums(st.ampli>0)>=2)-3)/(ncol(st.ampli)-3), linetype="dashed")
+grid.arrange(p.rd.ampli, p.sv.ampli)
+# Save as 6x6in PDF
+```
+
+
+## Process Metagenomics Data
+
+This section analyzes the metagenomics sequencing data: "For metagenomic sequencing...Data are deposited under ENA project accession EMBL: ERP006808. Sample details and individual accession numbers are provided in Additional file 1: Table S1b."
+
+Once downloaded, the metagenomics data was processed using Kraken through the Galaxy online service, selecting the Bacteria database, to create taxonomic profiles, which were then downloaded as .taxonomy files. Those processed files are included as part of this reproducible analysis in the `SalterMeta` directory.
+
+Read in the sample metadata:
+```{r import}
+path.meta <- "~/Desktop/Contamination/Analyses/SalterMeta" # CHANGE ME
+df.meta <- read.csv(file.path(path.meta, "metameta.csv"), stringsAsFactors = FALSE)
+rownames(df.meta) <- df.meta$Sample.Name
+df.meta$Kit <- sapply(strsplit(df.meta$Sample.Name, "_"), `[`, 1)
+# Drop data from PSP as that kit produced almost no reads
+df.meta <- df.meta[df.meta$Kit %in% c("CAMBIO","MP", "QIAGEN"),] 
+df.meta$Dilution.number[df.meta$Dilution.number == "0 (original culture)"] <- "0"
+# Define approximate quantitative concentrations (from Figre 2 in Satler et al.)
+conc.dict <- c("0"=1e3, "0 (original culture)"=1e3, "1"=1e2, "2"=1e1, "3"=1, "4"=1, "5"=1, "Negative control"=1)
+df.meta$conc <- conc.dict[df.meta$Dilution.number]
+```
+
+Read in the Kraken-assigned taxonomy profiles (those files should be in the directory `path.meta`):
+```{r}
+get.tax <- function(err, level, tax.path=path.meta) {
+  foo <- read.table(gzfile(file.path(tax.path, paste0(err, ".taxonomy.gz"))), header=FALSE, sep="\t", stringsAsFactors = FALSE)
+  colnames(foo) <- c("Name", "taxID", "root", "superkingdom", "kingdom", "subkingdom", "superphylum", "phylum", "subphylum",
+                   "superclass", "class", "subclass", "superorder", "order", "suborder", "superfamily", "family", "subfamily",
+                   "tribe", "subtribe", "genus", "subgenus", "species", "subspecies", "blank")
+  tab <- table(foo[,level])
+  unq <- as.vector(tab)
+  names(unq) <- names(tab)
+  unq
+}
+unqs <- lapply(df.meta$Run.accession, get.tax, level="genus")
+names(unqs) <- df.meta$Sample.Name
+```
+
+Convert the data into a feature table, and then a `phyloseq` object:
+```{r}
+st.meta <- makeSequenceTable(unqs) # Creates sample-by-genus feature table
+st.meta <- st.meta[,colnames(st.meta)!="n"] # Remove unclassified
+ft.meta <- sweep(st.meta, 1, rowSums(st.meta), "/") # Convert to frequencies
+ps.meta <- phyloseq(otu_table(st.meta, taxa_are_rows=FALSE), sample_data(df.meta))
+```
+
+Plot the overall read numbers:
+```{r}
+df.meta$Post.processing.read.count <- rowSums(st.meta)
+p.depth.meta <- ggplot(data=df.meta, aes(x=Dilution.number, y=Post.processing.read.count, color=Dilution.number)) + 
+                geom_point() + facet_grid(~Kit) + theme_bw()
+print(p.depth.meta)
+```
+
+Total read numbers drop off with dilution.
+
+Identify contaminants using the frequency method, both pooling allsamples and when each sequencing kit is identified as a batch:
+```{r}
+meta.min <- isContaminant(ps.meta, method="frequency", conc="conc", batch="Kit", batch.combine="minimum", normalize=TRUE)
+meta.pool <- isContaminant(ps.meta, method="frequency", conc="conc", normalize=TRUE)
+```
+
+Plot the removal of contaminants as a function of the classification threshold:
+```{r}
+threshs <- c(0, 0.001, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
+# Determine the total number of contaminant (i.e. non-Salmonealla) reads in each sample
+tot.meta <- sum(st.meta[,!colnames(st.meta) %in% "Salmonella"])
+
+fracdf.meta <- data.frame(pooled=sapply(threshs, function(t) sum(st.meta[,meta.pool$p<t], na.rm=TRUE)/tot.meta),
+                          batched=sapply(threshs, function(t) sum(st.meta[,meta.min$p<t], na.rm=TRUE)/tot.meta),
+                          threshold=threshs)
+svdf.meta <- data.frame(pooled=sapply(threshs, function(t) sum(meta.pool$p<t, na.rm=TRUE)/(ncol(st.meta)-1)),
+                        batched=sapply(threshs, function(t) sum(meta.min$p<t, na.rm=TRUE)/(ncol(st.meta)-1)),
+                        threshold=threshs)
+mfrac.meta <- melt(fracdf.meta, id.vars="threshold", value.name="Fraction.reads", variable.name="Method")
+msv.meta <- melt(svdf.meta, id.vars="threshold", value.name="Fraction.SVs", variable.name="Method")
+p.rd.meta <- ggplot(data=mfrac.meta, aes(x=threshold, y=Fraction.reads, color=Method)) + 
+                    geom_line() + geom_point() + xlim(0, 0.5) + ylim(0,1) +
+                    scale_color_manual(values=c("pooled"="blue", "batched"="red")) +
+                    theme_bw() + xlab("P-value Threshold") + ylab("Reads IDed as Contaminants\n(Proportion)") +
+                    geom_hline(yintercept=(sum(st.meta[,colSums(st.meta>0)>=2 & !colnames(st.meta) %in% "Salmonella"]))/tot.meta, linetype="dashed")
+p.sv.meta <- ggplot(data=msv.meta, aes(x=threshold, y=Fraction.SVs, color=Method)) + 
+                    geom_line() + geom_point() + xlim(0, 0.5) + ylim(0,1) +
+                    scale_color_manual(values=c("pooled"="blue", "batched"="red")) +
+                    theme_bw() + xlab("P-value Threshold") + ylab("Genera IDed as Contaminants\n(Proportion)") +
+                    geom_hline(yintercept=(sum(colSums(st.meta>0)>=2)-1)/(ncol(st.meta)-1), linetype="dashed")
+grid.arrange(p.rd.meta, p.sv.meta)
+# Save as 6x6in PDF
+```
+
+Looks good. Batched (minimum) still the way to go.
+
+## Make 4-Panel Fraction IDed Figure
+
+Define directory to output the PDF figures:
+```{r}
+path.out <- "~/Desktop/Contamination/Figures"
+```
+
+Create a 4-panel plot of the pooled vs. batched removal of contaminants. 
+First create joint data.frame:
+```{r}
+ampli.reads <- mfrac.ampli
+colnames(ampli.reads) <- c("Threshold", "Method", "Fraction")
+ampli.reads$Technology <- "16S rRNA Gene Sequencing"
+ampli.reads$Evaluation <- "Reads"
+
+ampli.svs <- msv.ampli
+colnames(ampli.svs) <- c("Threshold", "Method", "Fraction")
+ampli.svs$Technology <- "16S rRNA Gene Sequencing"
+ampli.svs$Evaluation <- "Variants"
+
+meta.reads <- mfrac.meta
+colnames(meta.reads) <- c("Threshold", "Method", "Fraction")
+meta.reads$Technology <- "Metagenomics Sequencing"
+meta.reads$Evaluation <- "Reads"
+
+meta.svs <- msv.meta
+colnames(meta.svs) <- c("Threshold", "Method", "Fraction")
+meta.svs$Technology <- "Metagenomics Sequencing"
+meta.svs$Evaluation <- "Variants"
+
+df4 <- rbind(ampli.reads, ampli.svs, meta.reads, meta.svs)
+
+# Make data.frame with the maximum ID fractions possible, given singe-sample contamiants cannot be IDed
+df.hline <- data.frame(Technology=c("16S rRNA Gene Sequencing", "16S rRNA Gene Sequencing", "Metagenomics Sequencing", "Metagenomics Sequencing"),
+                       Evaluation=c("Reads", "Variants", "Reads", "Variants"),
+                       Value=c((sum(st.ampli[,colSums(st.ampli>0)>=2])-sum(st.ampli[,c(1,2,3)]))/tot.ampli,
+                               (sum(colSums(st.ampli>0)>=2)-3)/(ncol(st.ampli)-3),
+                               (sum(st.meta[,colSums(st.meta>0)>=2 & !colnames(st.meta) %in% "Salmonella"]))/tot.meta,
+                               (sum(colSums(st.meta>0)>=2)-1)/(ncol(st.meta)-1)))
+```
+
+Now plot the 4-panel figures:
+```{r}
+p4 <- ggplot(data=df4, aes(x=Threshold, y=Fraction, color=Method)) + 
+      geom_line() + geom_point() + xlim(0, 0.5) + ylim(0,1) +
+      scale_color_manual(values=c("pooled"="blue", "batched"="red")) +
+      theme_bw() + xlab("P* Classification Threshold") + ylab("Fraction of Contaminants Identified") +
+      facet_grid(Evaluation~Technology) + 
+      geom_hline(data=df.hline, aes(yintercept=Value), linetype="dashed")
+print(p4)
+#ggsave(file.path(path.out, "Fraction_4Pane.pdf"), p4, width=7, height=4, units="in", useDingbats=FALSE)
+```
+
+## Make 16S and Shotgun Ordination Figure(s)
+
+Create ordinations of the samples without removing contaminants, with default contaminant removal (P\*=0.1) and with aggressive removal (P\*=0.5).
+
+Make plot for the 16S data:
+```{r}
+# Create sequence table with contaminants with P<0.1 removed
+st01 <- st.ampli
+st01[,ampli.min$p<0.1] <- 0
+# Create sequence table with contaminants with P<0.5 removed
+st05 <- st.ampli
+st05[,ampli.min$p<0.5] <- 0
+# Join together with uncorrected sequence table into a phyloseq object
+ps00 <- phyloseq(otu_table(st.ampli, taxa_are_rows=FALSE), sample_data(df.ampli))
+ps01 <- phyloseq(otu_table(st01, taxa_are_rows=FALSE), sample_data(df.ampli))
+ps05 <- phyloseq(otu_table(st05, taxa_are_rows=FALSE), sample_data(df.ampli))
+sample_names(ps01) <- paste0(sample_names(ps00), "01")
+sample_names(ps05) <- paste0(sample_names(ps00), "05")
+sample_data(ps00)$Contam <- "0.0"
+sample_data(ps01)$Contam <- "0.1"
+sample_data(ps05)$Contam <- "0.5"
+psa <- merge_phyloseq(ps00, ps01, ps05)
+#psa <- prune_taxa(colSums(st.meta>0)>1,psa)
+psa <- prune_samples(sample_sums(psa) > 0, psa)
+psa <- transform_sample_counts(psa, function(otu) otu/sum(otu))
+psa <- subset_samples(psa, PCR.cycles==40 & Dilution.number != "Neg")
+p.ord.ampli <- plot_ordination(psa, ordinate(psa, distance="bray", method="MDS"), color="Processing.Institute") +
+  facet_grid(Contam~Dilution.number) + 
+  theme_bw() + theme(axis.text=element_blank()) +
+  scale_color_manual(values=c("ICL"="#FF0000", "UB"="#009999", "WTSI"="#9FEE00")) +
+  theme(panel.grid=element_blank(), axis.ticks=element_blank(),
+        strip.text=element_text(size=8)) +
+#  ggtitle("16S rRNA Gene Sequencing") +
+  guides(color=FALSE) # Will add back in by hand to final figure
+p.ord.ampli
+#ggsave(file.path(path.out, "16S_ord.pdf"), p.ord.ampli, width=3.5, height=2, units="in", useDingbats=FALSE)
+```
+
+Make plot for the metagenomics data:
+```{r}
+# Create sequence table with contaminants with P<0.1 removed
+st01 <- st.meta
+st01[,meta.min$p<0.1] <- 0
+# Create sequence table with contaminants with P<0.5 removed
+st05 <- st.meta
+st05[,meta.min$p<0.5] <- 0
+# Join together with uncorrected sequence table into a phyloseq object
+ps00 <- phyloseq(otu_table(st.meta, taxa_are_rows=FALSE), sample_data(df.meta))
+ps01 <- phyloseq(otu_table(st01, taxa_are_rows=FALSE), sample_data(df.meta))
+ps05 <- phyloseq(otu_table(st05, taxa_are_rows=FALSE), sample_data(df.meta))
+sample_names(ps01) <- paste0(sample_names(ps01), "01")
+sample_names(ps05) <- paste0(sample_names(ps01), "05")
+sample_data(ps00)$Contam <- "0.0"
+sample_data(ps01)$Contam <- "0.1"
+sample_data(ps05)$Contam <- "0.5"
+psa <- merge_phyloseq(ps00, ps01, ps05)
+#psa <- prune_taxa(colSums(st.meta>0)>1,psa)
+psa <- prune_samples(sample_sums(psa) > 0, psa)
+psa <- transform_sample_counts(psa, function(otu) otu/sum(otu))
+p.ord.meta <- plot_ordination(psa, ordinate(psa, distance="bray", method="MDS"), color="Kit") +
+  facet_grid(Contam~Dilution.number) + 
+  theme_bw() + theme(axis.text=element_blank()) +
+  scale_color_manual(values=c("CAMBIO"="#00CC00", "MP"="#CD0074", "QIAGEN"="#FFCC00")) +
+  theme(panel.grid=element_blank(), axis.ticks=element_blank(),
+        strip.text=element_text(size=8)) +
+#  ggtitle("Whole-genome Shotgun Sequencing") +
+  guides(color=FALSE) # Will add back in by hand to final figure
+p.ord.meta
+#ggsave(file.path(path.out, "Shotgun_ord.pdf"), p.ord.meta, width=3.5, height=2, units="in", useDingbats=FALSE)
+```
+
+## Visualize Frequency and Prevalence Ps
+
+Do prevalence testing:
+```{r}
+sample_data(ps.ampli)$neg <- sample_data(ps.ampli)$Dilution.number %in% c("4", "5", "Neg")
+sample_data(ps.ampli)$neg[sample_data(ps.ampli)$Dilution.number == "3"] <- NA
+decontam.freq <- isContaminant(ps.ampli, conc="conc", method="frequency", normalize=TRUE)
+decontam.prev <- isContaminant(ps.ampli, neg="neg", method="prevalence", normalize=TRUE)
+```
+
+Visualize the frequency and prevalence Ps for each contaminant (i.e. non S. bongori) ASV:
+```{r}
+pdf <- data.frame(p.freq=decontam.freq$p, p.prev=decontam.prev$p, 
+                  Abundance=colSums(st.ampli), Prevalence=colSums(st.ampli>0))
+pdf$Classification <- "Sample"
+pdf$Classification[pdf$p.freq < 0.1 | pdf$p.prev < 0.1] <- "Contaminant"
+pdf <- pdf[c(-1, -2, -3),] # Remove the 3 S. bongori sequences
+p2 <- ggplot(data=pdf, aes(x=p.freq, y=p.prev, color=Classification)) + 
+  geom_point(aes(size=Abundance)) + scale_x_log10() + scale_y_log10() +
+  scale_color_manual(values=c("Contaminant"="red", "Sample"="black")) +
+  theme_bw() + xlab("decontam P (frequency)") + ylab("decontam P (prevalence)") +
+  geom_vline(xintercept=0.1, color="red", linetype="dashed") + geom_hline(yintercept=0.1, color="red", linetype="dashed") +
+  theme(aspect.ratio=1)
+p2
+# ggsave(file.path(path.out, "decontam_freq_prev.pdf"), p2, width=6, height=5, units="in", useDingbats=FALSE)
+```
+
+There are a few additional contaminant ASVs that the prevalence method identifies, but it is limited if using the default P*=0.1 threshold. However, if using the interpretable and more aggressives 0.5 threshold, it adds a fair bit more.
+

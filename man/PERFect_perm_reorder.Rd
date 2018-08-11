@@ -6,15 +6,25 @@
 This function  filters  the provided OTU table X at a test level alpha given a fitted object  perfect_perm obtained by running PERFect_perm() function. PERFect_perm_reorder() reavaluates taxa significance p-values for a different taxa ordering. 
 }
 \usage{
-PERFect_perm_reorder(X, Order_alt, res_perm, alpha = 0.05, distr = "sn")
+PERFect_perm_reorder(X, Order = "NP", Order.user = NULL, res_perm, normalize = "counts", 
+    center = FALSE, alpha = 0.1, distr = "sn", lag = 3, direction = "left", 
+    pvals_sim = NULL) 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{X}{OTU table, where taxa are columns and samples are rows of the table. Should be in data frame format with columns corresponding to taxa names}
-  \item{Order_alt}{Taxa importance ordering}
-  \item{res_perm}{Output of PERFect_perm() function}
-  \item{alpha}{Test level alpha, set to 0.05 by default}
-  \item{distr}{The type of distribution used  in PERFect_perm() function to obtain res_perm object.
+  \item{X}{OTU table, where taxa are columns and samples are rows of the table. It should be a in data frame format with columns corresponding to taxa names.}
+  
+  \item{Order}{Taxa ordering. The default ordering is the number of occurrences (NP) of the taxa in all samples. Other types of order are p-value ordering, number of connected taxa and weighted number of connected taxa, denoted as "pvals","NC","NCw" respectively. More details about taxa ordering are described in Smirnova et al. User can also specify their preference order with Order.user.}
+  
+  \item{res_perm}{Output of PERFect_perm() function.}
+  
+  \item{normalize}{Normalizing taxa count. The default option does not normalize taxa count, but user can convert the OTU table into a proprotion table using the option "prop" or convert it into a presence/absence table using "pres".}
+  
+  \item{center}{Centering OTU table. The default option does not center the OTU table.}  
+  
+  \item{alpha}{Test level alpha, set to 0.1 by default.}
+  
+  \item{distr}{The type of distribution used in PERFect_perm() function to obtain res_perm object.
   
   "sn" -- Skew-Normal distribution with  3 parameters: location  xi, scale  omega^2 and shape alpha 
   
@@ -24,6 +34,12 @@ PERFect_perm_reorder(X, Order_alt, res_perm, alpha = 0.05, distr = "sn")
    
    "cauchy" -- Cauchy distribution with 2 parameters: location  and scale 
 }
+   \item{lag}{Integer width of the rolling window in rolling average (moving mean), set to 3 by default.}
+   
+    \item{direction}{Character specifying whether the index of the result should be left- or right-aligned or centered compared to the rolling window of observations, set to "left" by default.}
+     
+  \item{pvals_sim}{Object resulting from simultaneous PERFect with taxa abundance ordering, allowing user to perform Simultaneous PERFect with p-values ordering. Be aware that the choice of distribution for both methods must be the same.}
+
 }
 \details{
 This function  is designed to save computational time needed to obtain and fit the sapling distribution for each taxon if taxa ordering different from the one used in PERFect_perm() is used. Note, the distribution and OTU table X should match the distribution used in PERFect_perm(). 
@@ -44,49 +60,33 @@ Ekaterina Smirnova
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-See Also as \code{\link{PERFect_perm}}
+\code{\link{PERFect_perm}}
 }
 \examples{
-require(Matrix)
-require(ggplot2)
-require(sn)
-require(fitdistrplus)
-require(psych)
 
 data(mock2)
+
+# Proportion data matrix
 Prop <- mock2$Prop
+
+# Counts data matrix
 Counts <- mock2$Counts
-#arrange counts in order of increasing number of samples taxa are present in 
-NP <- NP_Order(Counts)
-Counts <- Counts[,NP]
-
-#Presence absence data matrix
-Pres <- Counts
-Pres[Pres!=0]<-1
-
-#Proportions  data matrix
-Prop <- Counts/rowSums(Counts)
 
 #obtain permutation PERFEct results using NP taxa ordering
-system.time(res_perm <- PERFect_perm(X=Prop,  Order=NP,   quant = c(0.1,0.25, 0.5), distr = "sn",
-                                     alpha = 0.05, k = 10000, 
-                                     nbins =30, col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"))
+system.time(res_perm <- PERFect_perm(X=Prop, k =2))
 
 #run PERFEct_sim() function and obtain p-values ordering
-res_sim <- PERFect_sim(X=Prop,  Order=NP,  nbins = 30, col = "red", fill = "green", alpha = 0.05,distr = "sn", quant = c(0.1, 0.25, 0.5), hist_fill =0.2, linecol = "blue")
+res_sim <- PERFect_sim(X=Prop)
 
 #order according to p-values
 pvals_sim <- pvals_Order(Counts, res_sim)
 
 #update perfect_perm object according to p-values ordering
-#reorder
-res_reorder <- PERFect_perm_reorder(X=Prop,  Order_alt = pvals_sim,  res_perm = res_perm, alpha = 0.05, distr = "sn")
+res_reorder <- PERFect_perm_reorder(X=Prop,  Order.user = pvals_sim,  res_perm = res_perm)
 
 #permutation perfect colored by FLu values
-pvals_Plots(PERFect = res_perm, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
+pvals_Plots(PERFect = res_perm, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
 
-#calculate filtering loss due to removing these taxa
-Loss_PERFect_perm <- FL_J(X = Prop, J = names(res_reorder$filtX), leave = TRUE)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
