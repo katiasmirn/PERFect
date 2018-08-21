@@ -1,3 +1,4 @@
+#' @export
 ##############################################
 #Traditional Filtering Rule 2
 ##############################################
@@ -11,12 +12,12 @@ TraditR2 <- function(X,  Ab_min = 0.001){
   Psamp <- Nsamp/n
   #Select only taxa with abundance level > 0.001
   if(is.null(names(Abund))){names(Abund) <- 1:length(Abund)}
-  Taxa <- names(Abund[Abund > Ab_min])  
+  Taxa <- names(Abund[Abund > Ab_min])
   Abund <- Abund[Taxa]
   Nsamp <- Nsamp[Taxa]
   Psamp <- Psamp[Taxa]
   #Check additional conditions
-  C1 <- names(Abund[Abund > 0.01 & Nsamp >=1]) 
+  C1 <- names(Abund[Abund > 0.01 & Nsamp >=1])
   C2 <- names(Abund[Abund > 0.001 & Psamp >=0.02])
   C3 <- names(Abund[Psamp >=0.05])
   Taxa <- unique(c(C1, C2, C3))

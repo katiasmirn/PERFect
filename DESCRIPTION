@@ -1,9 +1,34 @@
-Package: PERFect
+Package: PERFecttest
 Type: Package
 Title: Permutation filtration for microbiome data
-Version: 1.0
-Date: 2017-06-10
-Author: Ekaterina Smirnova
-Maintainer: Ekaterina Smirnova <ekaterina.smirnova@mso.umt.edu>
-Description: PERFect is a  novel permutation filtering approach designed to address two unsolved problems in microbiome data processing: (i) define and  quantify loss due to filtering by implementing thresholds, and (ii) introduce and evaluate  a permutation  test for  filtering loss to provide a measure of excessive filtering.  Methods are assessed on two `mock' experiment data sets, where the true taxa compositions are known, and are applied to  a publicly available vaginal microbiome data set. The  method correctly removes contaminant  taxa in `mock'  data sets, quantifies and visualizes the corresponding filtering loss, and provides a uniform data-driven filtering criteria for real microbiome data sets
-License: free
+Version: 1.1.0
+Author: Ekaterina Smirnova [aut, cre]
+      Quy Cao [cre]
+Maintainer: Quy Cao <quy.cao@umontana.edu>
+Description: PERFect is a  novel permutation filtering approach designed to address
+    two unsolved problems in microbiome data processing: (i) define and  quantify 
+    loss due to filtering by implementing thresholds, and (ii) introduce and evaluate
+    a permutation  test for  filtering loss to provide a measure of excessive filtering.
+    Methods are assessed on two `mock' experiment data sets, where the true taxa compositions are known,
+    and are applied to  a publicly available vaginal microbiome data set.
+    The  method correctly removes contaminant  taxa in `mock'  data sets,
+    quantifies and visualizes the corresponding filtering loss,
+    and provides a uniform data-driven filtering criteria for real microbiome data sets.
+Depends: 
+    R (>= 3.5.0),
+    Matrix (>= 1.2.14),
+    ggplot2 (>= 3.0.0),
+    fitdistrplus (>= 1.0.9),
+    sn (>= 1.5.2),
+    psych (>= 1.8.4),
+    zoo (>= 1.8.3)
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+Suggests:
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+RoxygenNote: 6.1.0
+
+

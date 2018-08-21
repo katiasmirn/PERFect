@@ -1,9 +1,47 @@
+#' Plots of PERFect p-values
+#'
+#' @description Graphical representation of p-values obtained by running \code{PERFect_sim()} or
+#' \code{PERFect_perm()} for jth taxon colored by quantile values of individual filtering loss.
+#'
+#' @usage pvals_Plots(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha = 0.05)
+#'
+#' @param PERFect Output of \code{PERFect_sim()} or \code{PERFect_perm()} function.
+#'
+#' @param X OTU table, where taxa are columns and samples are rows of the table.
+#' It should be a in data frame format with columns corresponding to taxa names.
+#' @param quantiles Quantile values for coloring, these are set to 25\%, 50\%, 80\% and
+#' 90\% percentiles of the individual filtering loss values.
+#' @param alpha Alpha level of the test, set to 0.1 by default.
+#'
+#' @return p_vals Plot of p-values
+#'
+#' @author Ekaterina Smirnova
+#'
+#' @seealso \code{\link{PERFect_sim}}, \code{\link{PERFect_perm}}
+#'
+#' @examples
+#' data(mock2)
+#' # Proportion data matrix
+#' Prop <- mock2$Prop
+#'
+#' # Counts data matrix
+#' Counts <- mock2$Counts
+#' dim(Counts) # 240x46
+#'
+#' # Perform simultaenous filtering of the data
+#' res_sim <- PERFect_sim(X=Counts)
+#' dim(res_sim$filtX)      # 240x10, removing 36 taxa
+#' colnames(res_sim$filtX) # signal taxa
+#'
+#' #permutation perfect colored by FLu values
+#' pvals_Plots(PERFect = res_sim, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
+#' @export
 pvals_Plots <- function(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.1){
-  
+
   if(!(0 %in% quantiles)){quantiles <- c(0, quantiles)}
   if(!(1 %in% quantiles)){quantiles <- c(1, quantiles)}
   quantiles <- sort(quantiles)
-  
+
   pvals <- PERFect$pvals
   Order_pvals <- names(pvals)
   #taxa that separate the filtered out data set
@@ -23,14 +61,14 @@ pvals_Plots <- function(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.
   #overlay individual filtering loss information using points size
   #plot p-values
   Ind <- which(names(res_FLu) %in% names(pvals))
-  df <- data.frame(seq(1:length(pvals)), 
-                   pvals, 
+  df <- data.frame(seq(1:length(pvals)),
+                   pvals,
                    res_FLu[Ind],
                    FLu_vals[Ind])
   names(df) <- c("Taxa", "p_value", "FLu", "Quantiles")
   p_pvals <- ggplot(df) + geom_point( aes(x = Taxa, y = p_value, color = Quantiles)) +
   ggtitle("Permutation PERFect p-values") +
-  theme(panel.background = element_rect(fill = "white"), 
+  theme(panel.background = element_rect(fill = "white"),
         panel.grid.major = element_line(colour = "grey90"),
         axis.text.x  = element_text( size=10,colour="black", angle = 90, hjust = 1))+
   guides(color=guide_legend(title="FLu Quantiles"))

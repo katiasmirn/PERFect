@@ -1,25 +1,7 @@
----
-title: "Marginal inference in complex functional mixed effects models simulation scenario"
-author: "Ekaterina Smirnova"
-date: "`r date()`"
-output:
-  prettydoc::html_pretty:
-    theme: cayman
-    highlight: github
-vignette: >
-  %\VignetteIndexEntry{Simulations}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}  
----
-
-
-```{r global_options, include=FALSE}
+## ----global_options, include=FALSE---------------------------------------
 knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo = FALSE,fig.align='center')
-```
 
-
-
-```{r required_libraries}
+## ----required_libraries--------------------------------------------------
 
 rm(list=ls())
 #packages for salter data
@@ -27,13 +9,13 @@ library(decontam)
 library(phyloseq)
 library(reshape2)#;packageVersion("reshape2")
 
-library(Matrix)
-library(devtools)
-require(ggplot2)
-require(sn)
-require(fitdistrplus)
-require(psych) 
-library(PERFect)
+#library(Matrix)
+#library(devtools)
+#require(ggplot2)
+#require(sn)
+#require(fitdistrplus)
+#require(psych) 
+library(PERFecttest)
 library(dirmult)
 library(HMP)
 library(knitr)
@@ -41,70 +23,33 @@ library(kableExtra)
 library(gridExtra)
 library(grid)
 library(reshape2)
-library(zoo)
+#library(zoo)
 
 
 set.seed(12341)
 #setwd("~/Dropbox/PERFect/RCode/")
-setwd("C:/Users/Quy/Dropbox/Quy/PERFect/PERFect-master/R")
+#setwd("C:/Users/Kwee/Dropbox/Quy/PERFect/PERFect-master/R")
 #source("~/Dropbox/PERFect/RCode/SimData.R")
 #pathtodata <- "~/Dropbox/PERFect/RCode/Responses/Rdata/"
-```
 
-##Reagent and laboratory contamination data
-
-The data (Salter et al, 2014) was generated from the study of the effect of present contaminants in DNA extraction kits and other laboratory reagents on sequencing DNA. Mock samples of a pure Salmonella bongori culture had undergone five rounds of serial ten-fold dilutions to generate a series of high to low biomass samples. To generate a taxa counts table from this study, we used samples for the Salmonella bongori culture 16S rRNA gene profiling data, which are deposited as FASTQ files under ENA project accession EMBL: ERP006737 (https://www.ebi.ac.uk/ena/data/view/PRJEB7055), and processed using the *dada2* R-package. 
-
-## Process 16S Amplicon Data
-
-The downloaded amplicon sequencing data was processed using the *dada2* R-package, producing a table of exact amplicon sequence variants (ASV). Those processed files are included as part of this reproducible analysis in the `Salter16S` directory. The processing steps can be summarized as follows:
-
-1. Read in the sample metadata
-
-```{r}
-path.ampli <- "C:/Users/Quy/Dropbox/Quy/PERFect/PERFect-master/Analyses/Salter16S" # CHANGE ME
-df.ampli <- read.csv(file.path(path.ampli, "Salter1.csv"), header=TRUE, stringsAsFactors = FALSE)
+## ------------------------------------------------------------------------
+path.ampli <- "C:/Users/Quy/Dropbox/Quy/PERFect/PERFecttest/data" # CHANGE ME
+load(file.path(path.ampli, "salter1.rda"))
+df.ampli <- salter1
 rownames(df.ampli) <- df.ampli$Run.accession
-```
 
-2. Process the forward reads with DADA2 (must be downloaded from ENA) 
-```{r dada2}
-#path.fastq <- "~/Salter"
-#fnFs <- list.files(path.fastq, pattern="_1.fastq.gz", full.names=TRUE)
-#fastqFs <- fnFs[df.ampli$Run.accession]
-#fwdFs <- file.path(path.fastq, "FWD", basename(fastqFs))
-#names(fwdFs) <- names(fastqFs)
-#outF <- filterAndTrim(fastqFs, fwdFs, rm.phix=TRUE, truncLen=240, maxEE=3, multithread=TRUE)
-#drp <- derepFastq(fwdFs)
-#err <- learnErrors(drp, multithread=TRUE)
-#dd <- dada(drp, err=err, pool=TRUE, multithread=TRUE)
-#sta <- makeSequenceTable(dd)
-#st <- removeBimeraDenovo(sta, method="pooled", verbose=TRUE)
-#tax <- assignTaxonomy(st, "~/tax/silva_nr_v123_train_set.fa.gz", multithread=TRUE)
-#saveRDS(st, file.path(path, "st.rds"))
-#saveRDS(tax, file.path(path, "tax.rds"))
-```
-
-3. Store the output of the DADA2 process as RDS objects in the `Salter16S` directory
-
-4. Read in the DADA2-processed ASV tables and taxonomnic assignments
-```{r}
-st.ampli <- readRDS(file.path(path.ampli, "st.rds"))
-tax.ampli <- readRDS(file.path(path.ampli, "tax.rds"))
+## ------------------------------------------------------------------------
+load(file.path(path.ampli, "st.ampli.rda"))
+load(file.path(path.ampli, "tax.ampli.rda"))
 ft.ampli <- sweep(st.ampli, 1, rowSums(st.ampli), "/")
 df.ampli$Dilution.number[df.ampli$Dilution.number == "0 (original culture)"] <- "0"
 df.ampli$Dilution.number[df.ampli$Dilution.number == "Negative control"] <- "Neg"
 conc.dict <- c("0"=1e3, "0 (original culture)"=1e3, "1"=1e2, "2"=1e1, "3"=1, "4"=1, "5"=1, "Neg"=1)
 df.ampli$conc <- conc.dict[df.ampli$Dilution.number]
 #identical(rownames(df.ampli), rownames(st.ampli)) # TRUE
-ps.ampli <- phyloseq(otu_table(st.ampli, taxa_are_rows=FALSE), tax_table(tax.ampli), sample_data(df.ampli))
-```
+ps.ampli <- phyloseq(otu_table(st.ampli, taxa_are_rows=FALSE), tax_table(tax.ampli),sample_data(df.ampli))
 
-The detailed description of these steps can be found from the **salter_metagenomics** vignette of the *decontam* R-package [1].
-
-## Analysis of 16S Amplicon Data
-
-```{r}
+## ------------------------------------------------------------------------
 #all non-Salmonealla reads in each sample are contaminants
 #these are the First 3  real SVs from the S. bongori strain
 true <- "Salmonella" == unname(tax.ampli)[,6]
@@ -127,14 +72,12 @@ NP <- NP_Order(Salter.counts)
 taxaInfo <- taxaInfo[match(NP, taxaInfo$taxa),]
 taxaInfo$taxa <- factor(taxaInfo$taxa, levels = NP)
 #all 3 true features are the most dominant in the data
-```
 
-```{r}
+## ------------------------------------------------------------------------
 #dim(Salter.counts)
 Counts <- Salter.counts
-```
 
-```{r}
+## ------------------------------------------------------------------------
 #function to output results for each simulation run
 resSummary <-function(X, filtX, taxaInfo,  time = NA){
   rank_pvals = NULL 
@@ -150,13 +93,8 @@ resSummary <-function(X, filtX, taxaInfo,  time = NA){
   names(res) <- c("ntotal", "npres", "pfilt", "ntrue", "perccont")
   return(list(res = res,  time = time))
 }
-```
 
-The resultant taxa counts table has $42$ samples ($n=42$) and $635$ taxa ($p=635$). We applied $7$ different taxa filtering approaches on the data, namely:
-
-1. Simultaneous PERFect with skew-normal distribution and taxa abundance ordering (NP ordering) 
-
-```{r}
+## ------------------------------------------------------------------------
 
 #########################
 #quantiles from fit a
@@ -245,11 +183,8 @@ summary_sim_sn_d_0.05 <- resSummary(X = Counts, filtX = filtX,
 filtX <- filt_pval(X = Counts, pvals =res_sim_sn_d$pvals, alpha = 0.15)
 summary_sim_sn_d_0.15 <- resSummary(X = Counts, filtX = filtX, 
                           taxaInfo = taxaInfo,  time = NA)
-```
 
-2. Simultaneous PERFect with skew-normal distribution and p-values ordering 
-
-```{r}
+## ------------------------------------------------------------------------
 
 #########################
 #quantiles from fit a
@@ -338,12 +273,8 @@ summary_sim_sn_d_0.05_pvals <- resSummary(X = Counts, filtX = filtX,
 filtX <- filt_pval(X = Counts, pvals =res_sim_sn_d_pvals$pvals, alpha = 0.15)
 summary_sim_sn_d_0.15_pvals <- resSummary(X = Counts, filtX = filtX, 
                           taxaInfo = taxaInfo,  time = NA)
-```
 
-
-3. Permutation PERFect with skew-normal distribution and NP ordering
-
-```{r}
+## ------------------------------------------------------------------------
 start <- Sys.time()
 res_perm_a <- PERFect_perm(X=Counts,  Order="NP",  nbins = 30, col = "red", k = 2,
                        fill = "green", alpha = 0.1, distr = "sn", 
@@ -448,11 +379,8 @@ summary_perm_np_d_0.05 <- resSummary(X = Counts, filtX = filtX,
 filtX <- filt_pval(X = Counts, pvals =res_perm_d$pvals, alpha = 0.15)
 summary_perm_np_d_0.15 <- resSummary(X = Counts, filtX = filtX, 
                           taxaInfo = taxaInfo,  time = NA)
-```
 
-4. Permutation PERFect with skew-normal distribution and simultaneous PERFect p-values ordering
-
-```{r}
+## ------------------------------------------------------------------------
 
 start <- Sys.time()
 res_perm_pvals_a <- PERFect_perm_reorder(X=Counts,  Order = "pvals",  
@@ -540,20 +468,14 @@ filtX <- filt_pval(X = Counts, pvals =res_perm_pvals_d$pvals, alpha = 0.15)
 summary_perm_pvals_d_0.15 <- resSummary(X = Counts, filtX = filtX, 
                           taxaInfo = taxaInfo,  time = NA)
 
-```
 
-5. Filtering method from the *decontam* R-package
-
-This method identifies contaminants using the frequency approach, by either pooling all samples together or sort these samples into batches based on their sequencing location.
-
-```{r}
+## ------------------------------------------------------------------------
 start <- Sys.time()
 ampli.min <- isContaminant(ps.ampli, method="frequency", conc="conc", batch="Processing.Institute", batch.combine="minimum", normalize=TRUE)
 end <-  Sys.time()-start
 ampli.pool <- isContaminant(ps.ampli, method="frequency", conc="conc", normalize=TRUE)
-```
 
-```{r}
+## ------------------------------------------------------------------------
 #Plot the removal of contaminants as a function of the classification threshold: a) 0.05; b) 0.1; c) 0.1; d) 0.2. 
 #contaminant taxa according to decontam package
 #which(ampli.min$contaminant == TRUE) this corresponds to threshold value of t = 0.1
@@ -591,13 +513,8 @@ decontam_min[[i]] <- resSummary(X = Salter.counts, filtX = filtX,
 
 }
 
-```
 
-6. Traditional Filtering Rule 1
-
-This rule suggests to remove taxa that are mostly absent in all samples. In this simulation, we keep taxa that are present for at least $5$ times throughout all samples. 
-
-```{r}
+## ------------------------------------------------------------------------
 start <- Sys.time()
 #traditional filtering
 res_trad <- TraditR1(Counts, thresh =5)
@@ -606,17 +523,8 @@ end <-  Sys.time()-start
 summary_trad_r1 <- resSummary(X = Counts, filtX = res_trad, 
                           taxaInfo = taxaInfo, time= end)
 
-```
 
-7. Traditional Filtering Rule 2
-
-This method is adopted from Milici et al. (2016)[2] that removes taxa with low abundance level. Specifically, the simulation keep taxa with abundance level higher than $0.001\%$. Then it further selects taxa that satisfy at least one of the following conditions: 
-\begin{itemize}
-  \item Present in at least one sample at a relative abundance higher than $1\%$ of the reads of that sample
-  \item Present in at least $2\%$ of samples at a relative abundance higher than $0.\1%$ for a given sample
-  \item Present in at least $5%$ of samples at any abundance level.
-\end{itemize}
-```{r}
+## ------------------------------------------------------------------------
 
 #traditional filtering
 start <- Sys.time()
@@ -626,13 +534,8 @@ end <-  Sys.time()-start
 summary_trad_r2 <- resSummary(X = Counts, filtX = res_trad, 
                           taxaInfo = taxaInfo,  time = end)
 
-```
 
-## Results comparison
-
-The histogram of log differences in filtering loss for the simultaneous PERFect method shows that the method is generally robust to the choice of quantiles used to fit the Skew-Normal distribution. 
-
-```{r}
+## ------------------------------------------------------------------------
 #Manual fit to display all 4 quantile fits on one graph 
 hist <- res_sim_sn_a$hist + stat_function(fun = dsn, aes(linetype = "Q1"),
       args = list(xi = res_sim_sn_a$est[1], omega = res_sim_sn_a$est[2], 
@@ -652,11 +555,8 @@ hist <- res_sim_sn_a$hist + stat_function(fun = dsn, aes(linetype = "Q1"),
       theme(legend.position=c(0.6,0.8))
 hist
 #ggsave("~/Dropbox/PERFect/RCode/Responses/Plots/Quantiles_Salter.pdf")
-```
 
-The dataset contains $3$ true taxa out of $635$ taxa in total. The filtering results for each method are shown in the table below. The detailed discussion of these results can be found from the original paper [3].
-
-```{r}
+## ------------------------------------------------------------------------
 df <- rbind(summary_sim_sn_a_0.15$res,summary_sim_sn_b_0.15$res,
             summary_sim_sn_c_0.15$res,summary_sim_sn_d_0.15$res,
             summary_sim_sn_a$res,summary_sim_sn_b$res,
@@ -717,9 +617,8 @@ df <- rbind(summary_sim_sn_a_0.15$res,summary_sim_sn_b_0.15$res,
 #                   "decontam_batched_0.2", "decontam_batched_0.3")
 df[,c(3,5)] <- round(df[,c(3,5)], 4)*100
 df <- as.data.frame(df)
-```
 
-```{r}
+## ------------------------------------------------------------------------
 df$pval <- c(rep(c(rep(0.15,4),rep(0.10,4),rep(0.05,4)),4),"Rule 1","Rule 2",rep(c(0.05,0.1,0.2,0.3),2))
 df$setting <- c(rep(c("5%,10%,25%","10%,25%,40%","10%,25%,50%","20%,30%,60%"),12),rep(NA,10))
 df$method <- c(rep(c("Simultaneous <br/> PERFect <br/> abundance <br/> ordering"),12),
@@ -746,11 +645,8 @@ kable(df,format='html', digits=2, align='lccccc',escape = FALSE)  %>%
 
 res_Salter <- df
 #saveRDS(res_Salter, file = paste0(pathtodata, "test_Salter.RDS"))
-```
 
-The runtime for each method is shown as follows:
-
-```{r}
+## ------------------------------------------------------------------------
 df <- data.frame(summary_sim_sn_a$time, summary_perm_np_a$time, 
                  summary_trad_r1$time, summary_trad_r2$time, decontam_pool[[1]]$time)
 names(df) <- c("Simultaneous PERFect", "Permutation PERFect", 
@@ -768,20 +664,5 @@ kable(df,
       col.names = names_spaced,
       escape = FALSE) 
 
-
-```
-
-## References
-
-1. Davis NM, Proctor D, Holmes SP, Relman DA, Callahan BJ (2017). "Simple statistical
-identification and removal of contaminant sequences in marker-gene and metagenomics data."
-_bioRxiv_, 221499. doi: 10.1101/221499 (URL: http://doi.org/10.1101/221499).
-
-2. Milici, M., Tomasch, J., Wos-Oxley, M. L., Wang, H., Jauregui, R., Camarinha-Silva, A., Deng,
-Z.-L., Plumeier, I., Giebel, H.-A., Wurst, M., Pieper, D. H., Simon, M., and Wagner-Dobler, I.
-(2016). Low diversity of planktonic bacteria in the tropical ocean. _Scientific Reports_, 6(19054),
-1-9.
-
-3. Ekaterina Smirnova, Snehalata Huzurbazar, Farhad Jafari; PERFect: PERmutation Filtering test for microbiome data, _Biostatistics_, kxy020, https://doi.org/10.1093/biostatistics/kxy020.
 
 

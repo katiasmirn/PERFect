@@ -1,3 +1,4 @@
+#' @export
 ##############################################
 #Traditional Filtering Rule 1
 ##############################################
@@ -10,3 +11,4 @@ TraditR1 <- function(X, rel = FALSE, thresh=5){
   filtX <- X[,NNzero >= thresh]
   return(filtX)
 }
+
