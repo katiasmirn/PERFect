@@ -1,7 +1,7 @@
-Package: PERFecttest
+Package: PERFect
 Type: Package
 Title: Permutation filtration for microbiome data
-Version: 1.1.0
+Version: 1.1.1
 Author: Ekaterina Smirnova [aut, cre]
       Quy Cao [cre]
 Maintainer: Quy Cao <quy.cao@umontana.edu>

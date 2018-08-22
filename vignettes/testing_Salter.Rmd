@@ -26,14 +26,13 @@ rm(list=ls())
 library(decontam)
 library(phyloseq)
 library(reshape2)#;packageVersion("reshape2")
-
 #library(Matrix)
 #library(devtools)
 #require(ggplot2)
 #require(sn)
 #require(fitdistrplus)
 #require(psych) 
-library(PERFecttest)
+library(PERFect)
 library(dirmult)
 library(HMP)
 library(knitr)
@@ -62,7 +61,7 @@ The downloaded amplicon sequencing data was processed using the *dada2* R-packag
 1. Read in the sample metadata
 
 ```{r}
-path.ampli <- "C:/Users/Quy/Dropbox/Quy/PERFect/PERFecttest/data" # CHANGE ME
+path.ampli <- "C:/Users/Kwee/Dropbox/Quy/PERFect/PERFect/data" # CHANGE ME
 load(file.path(path.ampli, "salter1.rda"))
 df.ampli <- salter1
 rownames(df.ampli) <- df.ampli$Run.accession

@@ -49,21 +49,21 @@ ResultsComparison <-function(X, Counts,Ab_min = 0.001,rel =FALSE, thresh=5,prop 
 
   #Traditional filtering
   Filt_R1 <- TraditR1(X=Counts,  rel =rel, thresh=thresh)#if rel = TRUE then use propo of samples > thresh (say 0.05 = 5%)
-  Filt_R2 <- TraditR2(X=Counts,  Ab_min = Ab_min, prop =prop)#prop =FALSE if counts matrix is used
+  Filt_R2 <- TraditR2(X=Counts,  Ab_min = Ab_min)#prop =FALSE if counts matrix is used
   #taxa left after traditional rules 1 and 2 applied
   Trad_R1 <- names(Filt_R1)
   Trad_R2 <- names(Filt_R2)
 
   #taxa left after traditional rules 1 and 2 applied
-  Loss_Trad_R1 <- FL_J(X = X, J = Trad_R1, leave = TRUE)
-  Loss_Trad_R2 <- FL_J(X = X, J = Trad_R2, leave = TRUE)
+  Loss_Trad_R1 <- FL_J(X = X, J = Trad_R1)
+  Loss_Trad_R2 <- FL_J(X = X, J = Trad_R2)
 
   #PERFect loss
   PERFect_sim_taxa <- names(res_sim$filtX)
   PERFect_perm_taxa <- names(res_perm$filtX)
   #corresponding filtering loss
-  Loss_PERFect_sim <- FL_J(X = X, J = PERFect_sim_taxa, leave = TRUE)
-  Loss_PERFect_perm <- FL_J(X = X, J = PERFect_perm_taxa, leave = TRUE)
+  Loss_PERFect_sim <- FL_J(X = X, J = PERFect_sim_taxa)
+  Loss_PERFect_perm <- FL_J(X = X, J = PERFect_perm_taxa)
 
   #table for the paper
   Res <- cbind(rbind(length(Trad_R1), length(Trad_R2), length(PERFect_sim_taxa), length(PERFect_perm_taxa)),
