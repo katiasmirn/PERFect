@@ -7,7 +7,7 @@
 #' @param X OTU table, where taxa are columns and samples are rows of the table. It should be a in dataframe format
 #' with columns corresponding to taxa names.
 #'
-#' @param Order_Ind Numeric column order corresponding to taxa importance arranegment.
+#' @param Order_Ind Numeric column order corresponding to taxa importance arrangement.
 #'
 #' @param Plot A binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss.
 #'
@@ -50,6 +50,20 @@
 #' @export
 
 DiffFiltLoss <- function(X,  Order_Ind, Plot = TRUE, Taxa_Names = NULL){
+
+  # Check the format of X
+  if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
+  #   stop('X must be a data frame or a matrix')
+  # if(!(class(X) == "matrix")){X <- as.matrix(X)}
+
+  # Check the format of Order_Ind
+  if(class(Order_Ind) != "integer")
+    stop('Order_Ind argument must be a vector of integer values')
+
+  # Check the format of Plot
+  if(class(Plot) != "logical")
+    stop('Plot argument must be a logical value')
+
   #X - data matrix with taxa in columns and samples in rows
   p <- dim(X)[2]#total #of taxa
   DFL <- rep(1,p-1)
@@ -57,7 +71,7 @@ DiffFiltLoss <- function(X,  Order_Ind, Plot = TRUE, Taxa_Names = NULL){
   Netw <- t(X)%*%X
 
   for(j in 1:(p-1)){DFL[j] <- DiffFiltLoss_j(Order_Ind,Netw, j)}
-  DFL <- DFL/tr(t(Netw)%*%Netw)
+  DFL <- DFL/sum(Netw*Netw)
 
   if(Plot == TRUE){
 

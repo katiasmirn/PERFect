@@ -124,11 +124,10 @@
 #'
 #' @import Matrix
 #' @import ggplot2
-#' @import stats4
 #' @importFrom sn qsn
 #' @importFrom fitdistrplus qmedist
 #' @importFrom psych tr
-#' @importFrom zoo rollmean
+#' @importFrom zoo rollmean rollapply
 #' @export
 PERFect_sim <- function(X,  Order = "NP",   Order.user = NULL,
                     normalize = "counts", center = FALSE,
@@ -141,12 +140,46 @@ PERFect_sim <- function(X,  Order = "NP",   Order.user = NULL,
   pDFL <- NULL
   phist <- NULL
 
+  # Check the format of X
+  if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
+  #  stop('X must be a data frame or a matrix')
+  #if(!(class(X) == "matrix")){X <- as.matrix(X)}
+
+  # Check the format of Order
+  if(!(Order %in% c("NP","pvals","NC","NCw")))
+    stop('Order argument can only be "NP", "pvals", "NC", or "NCw" ')
+
+  # Check the format of normalize
+  if(!(normalize %in% c("counts","prop","pres")))
+    stop('normalize argument can only be "counts", "prop", or "pres" ')
+
+  # Check the format of center
+  if(class(center) != "logical")
+    stop('center argument must be a logical value')
+
+  # Check the format of quant
+  if(!is.vector(quant)) stop('quant argument must be a vector')
+
+  # Check the format of distr
+  if(!(distr %in% c("sn","norm","t","cauchy")))
+    stop('normalize argument can only be "sn", "norm", "t", or "cauchy" ')
+
+  # Check the format of alpha
+  if(!is.numeric(alpha)) stop('alpha argument must be a numerical value')
+
+  # Check if pvals_sim object is input correctly
+  if(class(pvals_sim) != "NULL" & length(pvals_sim$pvals) == 0)
+    stop('pvals_sim object must be a result from simultaneous PERFect with taxa abundance ordering')
+
   #Order columns by importance
-  if(Order == "NP") {Order.vec <- NP_Order(X)}
-  if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
-  if(Order == "NC"){Order.vec <- NC_Order(X)}
-  if(Order == "NCw"){Order.vec <- NCw_Order(X)}
-  else if (!is.null(Order.user)) {Order.vec = Order.user} #user-specified ordering of columns of X
+  if(is.null(Order.user)){
+    if(Order == "NP") {Order.vec <- NP_Order(X)}
+    if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
+    if(Order == "NC"){Order.vec <- NC_Order(X)}
+    if(Order == "NCw"){Order.vec <- NCw_Order(X)}
+  } else {
+    Order.vec <- Order.user #user-specified ordering of columns of X
+  }
   X <- X[,Order.vec]#properly order columns of X
 
   #remove all-zero OTU columns
@@ -223,7 +256,8 @@ PERFect_sim <- function(X,  Order = "NP",   Order.user = NULL,
                           print("Warning: more than 3 quantile values are given. \nLargest 3 quantiles are used.")}
     if(length(quant) < 3){stop("At least 3 quantile values must be specified.")}
     lp <- list(xi = mean(lfl$DFL), omega = sd(lfl$DFL), alpha = 1.5)
-    fit <- qmedist(lfl$DFL, distr, probs=quant, start=lp)
+    suppressWarnings(fit <- qmedist(lfl$DFL, distr, probs=quant, start=lp))
+    #fit <- fitdist(lfl$DFL, distr, method = "qme", probs=quant, start=lp)
     est <- fit$estimate
     hist <- hist + stat_function(fun = dsn, args = list(xi = est[1], omega = est[2], alpha = est[3]), colour=linecol)
     #calculate p-values
@@ -234,7 +268,7 @@ PERFect_sim <- function(X,  Order = "NP",   Order.user = NULL,
   names(pvals) <- names(DFL$DFL)
 
   #smooth p-values
-  pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )
+  pvals_avg <- zoo::rollmean(pvals, k=lag, align=direction,  fill=NA )
   #replace na's with original values
   pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
 

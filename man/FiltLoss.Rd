@@ -11,8 +11,8 @@ FiltLoss(X, Order = "NP", Order.user = NULL, type = "Cumu", Plot = TRUE)
 It should be a in data frame format with columns corresponding to taxa names.}
 
 \item{Order}{Taxa ordering. The default ordering is the number of occurrences (NP) of the taxa in all samples.
-Other types of order are p-value ordering, number of connected taxa and weighted number of connected taxa,
-denoted as \code{"pvals"}, \code{"NC"}, \code{"NCw"} respectively. More details about taxa ordering are described in Smirnova et al.
+Other types of order are number of connected taxa and weighted number of connected taxa,
+denoted as \code{"NC"}, \code{"NCw"} respectively. More details about taxa ordering are described in Smirnova et al.
 User can also specify their preference order with Order.user.}
 
 \item{type}{Type of filtering loss calculation.

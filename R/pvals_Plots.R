@@ -3,7 +3,7 @@
 #' @description Graphical representation of p-values obtained by running \code{PERFect_sim()} or
 #' \code{PERFect_perm()} for jth taxon colored by quantile values of individual filtering loss.
 #'
-#' @usage pvals_Plots(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha = 0.05)
+#' @usage pvals_Plots(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha = 0.1)
 #'
 #' @param PERFect Output of \code{PERFect_sim()} or \code{PERFect_perm()} function.
 #'
@@ -37,6 +37,22 @@
 #' pvals_Plots(PERFect = res_sim, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
 #' @export
 pvals_Plots <- function(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.1){
+
+  # Check if PERFect object is input correctly
+  if(length(PERFect$pvals) == 0){
+    stop('PERFect object must be a result from PERFect_sim() or PERFect_perm()')
+  }
+
+  # Check the format of X
+  if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
+  #   stop('X must be a data frame or a matrix')
+  # if(!(class(X) == "matrix")){X <- as.matrix(X)}
+
+  # Check the format of quantiles
+  if(!is.vector(quantiles)) stop('quantiles argument must be a vector')
+
+  # Check the format of alpha
+  if(!is.numeric(alpha)) stop('alpha argument must be a numerical value')
 
   if(!(0 %in% quantiles)){quantiles <- c(0, quantiles)}
   if(!(1 %in% quantiles)){quantiles <- c(1, quantiles)}

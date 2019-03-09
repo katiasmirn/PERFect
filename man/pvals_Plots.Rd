@@ -4,7 +4,7 @@
 \alias{pvals_Plots}
 \title{Plots of PERFect p-values}
 \usage{
-pvals_Plots(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha = 0.05)
+pvals_Plots(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha = 0.1)
 }
 \arguments{
 \item{PERFect}{Output of \code{PERFect_sim()} or \code{PERFect_perm()} function.}

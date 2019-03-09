@@ -88,6 +88,33 @@
 PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
                                  normalize = "counts", center = FALSE, alpha = 0.10, distr = "sn",
                                  lag = 3, direction ="left", pvals_sim = NULL){
+  # Check the format of X
+  if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
+  #   stop('X must be a data frame or a matrix')
+  # if(!(class(X) == "matrix")){X <- as.matrix(X)}
+
+  # Check the format of Order
+  if(!(Order %in% c("NP","pvals","NC","NCw")))
+    stop('Order argument can only be "NP", "pvals", "NC", or "NCw" ')
+
+  # Check the format of res_perm
+  if(class(res_perm) != "NULL" & length(res_perm$pvals) == 0)
+    stop('res_perm argument must be the output from the function PERFect_perm()')
+
+  # Check the format of normalize
+  if(!(normalize %in% c("counts","prop","pres")))
+    stop('normalize argument can only be "counts", "prop", or "pres" ')
+
+  # Check the format of center
+  if(class(center) != "logical")
+    stop('center argument must be a logical value')
+
+  # Check the format of distr
+  if(!(distr %in% c("sn","norm","t","cauchy")))
+    stop('normalize argument can only be "sn", "norm", "t", or "cauchy" ')
+
+  # Check the format of alpha
+  if(!is.numeric(alpha)) stop('alpha argument must be a numerical value')
 
   #Order columns by importance
   if(Order == "NP") {Order.vec <- NP_Order(X)}
@@ -134,7 +161,7 @@ PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
 
   #re-calculate filtered X
   #smooth p-values
-  pvals_avg <- rollmean(pvals, k=lag, align=direction,  fill=NA )
+  pvals_avg <- zoo::rollmean(pvals, k=lag, align=direction,  fill=NA )
   #replace na's with original values
   pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
   #select taxa that are kept in the data set at significance level alpha

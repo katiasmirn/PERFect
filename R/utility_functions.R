@@ -3,7 +3,7 @@
 #' @export
 DiffFiltLoss_j <- function(Perm_Order,Netw, j){
   J_jp1 <-  Perm_Order[1:(j+1)]
-  #calculate corresponding norm ratios this is the value of the matric ||
+  #calculate corresponding norm ratios this is the value of the matrix ||
   DFL <-  (2*t(Netw[J_jp1[max(NROW(J_jp1))],-J_jp1])%*%Netw[J_jp1[max(NROW(J_jp1))],-J_jp1]+
              Netw[J_jp1[max(NROW(J_jp1))], J_jp1[max(NROW(J_jp1))]]^2)
 
@@ -31,14 +31,28 @@ Perm_j_s <- function(j, Netw, k,p, p2 = NULL){
 sampl_distr <- function(X, k){
 p <- dim(X)[2]
 Netw <- t(X)%*%X
-full_norm <- tr(t(Netw)%*%Netw)#this is full norm value
+#full_norm <- psych::tr(t(Netw)%*%Netw)#this is full norm value
+full_norm <- sum(Netw*Netw)
 #For each taxon j, create a distribution of its DFL's by permuting the labels
 res_all <- lapply(1:(p-1),function(x) x)
-FL_j <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = x+1))
+
+# Calculate the number of cores
+no_cores <- parallel::detectCores()-1
+# Initiate cluster, start parrallel processing
+cl <- parallel::makeCluster(no_cores)
+#load variables for each core
+parallel::clusterExport(cl,c("Perm_j_s","Netw","k","p"),envir=environment())
+#parallel apply
+FL_j <- parallel::parLapply(cl, res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = x+1))
+#FL_j <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = x+1))
+# End the parallel processing
+parallel::stopCluster(cl)
+
 #divide by the full matrix norm values
 res_pres <- lapply(FL_j, function(x) {x/full_norm})
 return(res_pres)
 }
+
 
 #######################################
 #Compare results of filtering rules
@@ -256,3 +270,9 @@ filt_pval <- function(X, pvals, alpha, Order = "NP",   Order.user = NULL, pvals_
   return(filtX)
 }
 
+### FIND THE INDEX TO TEST
+sum_n <- function(tot){
+  p = (-1+sqrt(1+8*tot))/2
+  idx = ceiling(cumsum(c(p:1)))
+  return(list("p" = p, "idx" = idx))
+}

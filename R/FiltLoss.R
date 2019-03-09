@@ -12,8 +12,8 @@
 #' It should be a in data frame format with columns corresponding to taxa names.
 #'
 #' @param Order Taxa ordering. The default ordering is the number of occurrences (NP) of the taxa in all samples.
-#'  Other types of order are p-value ordering, number of connected taxa and weighted number of connected taxa,
-#'  denoted as \code{"pvals"}, \code{"NC"}, \code{"NCw"} respectively. More details about taxa ordering are described in Smirnova et al.
+#'  Other types of order are number of connected taxa and weighted number of connected taxa,
+#'  denoted as \code{"NC"}, \code{"NCw"} respectively. More details about taxa ordering are described in Smirnova et al.
 #'  User can also specify their preference order with Order.user.
 #'
 #' @param type Type of filtering loss calculation.
@@ -74,14 +74,33 @@ FiltLoss <- function(X, Order = "NP", Order.user = NULL, type = "Cumu", Plot = T
   #type = Cm - 1:j tax are removed to calculate FL
   p <- dim(X)[2]#total #of taxa
   Norm_Ratio <- rep(1, p)
-  X <- as.matrix(X)
+
+  # Check the format of X
+  if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
+  #   stop('X must be a data frame or a matrix')
+  # if(!(class(X) == "matrix")){X <- as.matrix(X)}
+
+  # Check the format of Order
+  if(!(Order %in% c("NP","NC","NCw")))
+    stop('Order argument can only be "NP", "NC", or "NCw" ')
+
+  # Check the format of type
+  if(!(type %in% c("Cumu","Ind")))
+    stop('type argument can only be "Cumu" or "Ind" ')
+
+  # Check the format of Plot
+  if(class(Plot) != "logical")
+    stop('Plot argument must be a logical value')
 
   #Order columns by importance
-  if(Order == "NP") {Order.vec <- NP_Order(X)}
-  if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
-  if(Order == "NC"){Order.vec <- NC_Order(X)}
-  if(Order == "NCw"){Order.vec <- NCw_Order(X)}
-  else if (!is.null(Order.user)) {Order.vec = Order.user} #user-specified ordering of columns of X
+  if(is.null(Order.user)){
+    if(Order == "NP") {Order.vec <- NP_Order(X)}
+    #if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
+    if(Order == "NC"){Order.vec <- NC_Order(X)}
+    if(Order == "NCw"){Order.vec <- NCw_Order(X)}
+  } else {
+    Order.vec <- Order.user #user-specified ordering of columns of X
+  }
   X <- X[,Order.vec]#properly order columns of X
 
   Order_Ind <- 1:length(Order.vec)
@@ -95,11 +114,12 @@ FiltLoss <- function(X, Order = "NP", Order.user = NULL, type = "Cumu", Plot = T
     #define matrix X_{-J}'X_{-J} for the choice of cumulative or individual filtering loss
     Netw_R <- Netw[Ind, Ind]
     #calculate the corresponding norm
-    Norm_Ratio[i] <-  tr(t(Netw_R)%*%Netw_R)
-
+    #Norm_Ratio[i] <-  psych::tr(t(Netw_R)%*%Netw_R)
+    Norm_Ratio[i] <-  sum(Netw_R*Netw_R)
   }#end for
 
-  FL <- 1 - Norm_Ratio/tr(t(Netw)%*%Netw) #result divided by the full matrix norm
+  #FL <- 1 - Norm_Ratio/psych::tr(t(Netw)%*%Netw) #result divided by the full matrix norm
+  FL <- 1 - Norm_Ratio/sum(Netw*Netw)
   if(Plot == TRUE){
 
     #Plot Full Norm reduction

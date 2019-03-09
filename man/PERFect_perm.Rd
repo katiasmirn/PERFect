@@ -5,9 +5,9 @@
 \title{Permutation PERFect filtering for microbiome data}
 \usage{
 PERFect_perm(X, Order = "NP", Order.user = NULL, normalize = "counts",
-    center = FALSE, quant = c(0.1, 0.25, 0.5), distr = "sn",
+    algorithm = "fast", center = FALSE, quant = c(0.1, 0.25, 0.5), distr = "sn",
     alpha = 0.1, lag = 3, direction = "left", pvals_sim = NULL,
-    k = 1000, dfl_distr = NULL, nbins = 30, hist = FALSE, col = "red",
+    k = 10000, dfl_distr = NULL, nbins = 30, hist = FALSE, col = "red",
     fill = "green", hist_fill = 0.2, linecol = "blue")
 }
 \arguments{
@@ -23,6 +23,10 @@ User can also specify their preference order with Order.user.}
 but user can convert the OTU table into a proportion table using the option \code{"prop"}
 or convert it into a presence/absence table using \code{"pres"}.}
 
+\item{algorithm}{Algorithm speed. The default is speed is \code{"fast"}, which allows the program to efficiently
+search for significant taxa without computing all the p-values. User must use the default option \code{"hist = FALSE"}
+for the fast algorithm. The alternative setting is \code{"full"}, which computes all the taxa's p-values.}
+
 \item{center}{Centering OTU table. The default option does not center the OTU table.}
 
 \item{quant}{Quantile values used to fit the distribution to log DFL values.
@@ -35,8 +39,6 @@ and set as the default distribution, other choices are available.
 \describe{
 \item{\code{"sn"}}{Skew-Normal distribution with 3 parameters: location xi, scale omega^2 and shape alpha}
 \item{\code{"norm"}}{Normal distribution with 2 parameters: mean and standard deviation sd}
-\item{\code{"t"}}{Student t-distribution with 2 parameters: n degrees of freedom and noncentrality ncp}
-\item{\code{"cauchy"}}{Cauchy distribution with 2 parameters: location and scale}
 }}
 
 \item{alpha}{Test level alpha, set to 0.1 by default.}

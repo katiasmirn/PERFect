@@ -10,7 +10,7 @@ DiffFiltLoss(X, Order_Ind, Plot = TRUE, Taxa_Names = NULL)
 \item{X}{OTU table, where taxa are columns and samples are rows of the table. It should be a in dataframe format
 with columns corresponding to taxa names.}
 
-\item{Order_Ind}{Numeric column order corresponding to taxa importance arranegment.}
+\item{Order_Ind}{Numeric column order corresponding to taxa importance arrangement.}
 
 \item{Plot}{A binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss.}
 

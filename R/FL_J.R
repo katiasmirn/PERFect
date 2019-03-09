@@ -42,12 +42,22 @@
 #'
 
 FL_J <- function(X, J){
+
+  # Check the format of X
+  if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
+  #   stop('X must be a data frame or a matrix')
+  # if(!(class(X) == "matrix")){X <- as.matrix(X)}
+
+  # Check the format of J
+  if(class(J) != "character")
+    stop('J argument must be a character vector containing names of taxa to be removed')
+
   Ind <- which(colnames(X) %in%  J)
   X_R <- X[,-Ind]
   #calculate corresponding norm
   Netw <- t(as.matrix(X))%*%as.matrix(X)
   Netw_R <- t(as.matrix(X_R))%*%as.matrix(X_R)
-  FL <-  1 - (tr(t(Netw_R)%*%Netw_R)/tr(t(Netw)%*%Netw))
-
+  #FL <-  1 - (psych::tr(t(Netw_R)%*%Netw_R)/psych::tr(t(Netw)%*%Netw))
+  FL <-  1 - (sum(Netw_R*Netw_R)/sum(Netw*Netw))
   return(FL)
 }

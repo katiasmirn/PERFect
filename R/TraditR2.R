@@ -3,6 +3,15 @@
 #Traditional Filtering Rule 2
 ##############################################
 TraditR2 <- function(X,  Ab_min = 0.001){
+
+  # Check the format of X
+  if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
+  #   stop('X must be a data frame or a matrix')
+  # if(!(class(X) == "matrix")){X <- as.matrix(X)}
+
+  # Check the format of Ab_min
+  if(!is.numeric(Ab_min)) stop('Ab_min argument must be a numerical value')
+
   #check if X is a relative abundance matrix
   if(!(all(apply(X, 1, sum) ==1))) {X <- sweep(X, MARGIN=1, apply(X,1,sum), '/')}
   n <- dim(X)[1]
