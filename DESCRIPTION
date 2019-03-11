@@ -24,4 +24,4 @@ Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
 RoxygenNote: 6.1.0
 NeedsCompilation: no
-Packaged: 2019-03-05 04:52:27 UTC; Kwee
+Packaged: 2019-03-10 05:19:52 UTC; Kwee

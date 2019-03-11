@@ -122,10 +122,10 @@
 PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
                          normalize = "counts", algorithm = "fast", center = FALSE,
                          quant = c(0.10, 0.25, 0.5),  distr ="sn",
-                         alpha = 0.10, lag = 3, direction ="center",
+                         alpha = 0.10, lag = 3, direction ="left",
                          pvals_sim = NULL,
                          k=10000, dfl_distr = NULL,
-                         nbins =30,  hist = FALSE,
+                         nbins =30,  hist = TRUE,
                          col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
 
   # Check the format of X
