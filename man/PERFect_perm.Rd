@@ -4,7 +4,7 @@
 \alias{PERFect_perm}
 \title{Permutation PERFect filtering for microbiome data}
 \usage{
-PERFect_perm(X, Order = "NP", Order.user = NULL, normalize = "counts",
+PERFect_perm(X, infocol = NULL, Order = "NP", Order.user = NULL, normalize = "counts",
     algorithm = "fast", center = FALSE, quant = c(0.1, 0.25, 0.5), distr = "sn",
     alpha = 0.1, lag = 3, direction = "left", pvals_sim = NULL,
     k = 10000, dfl_distr = NULL, nbins = 30, hist = FALSE, col = "red",
@@ -13,6 +13,10 @@ PERFect_perm(X, Order = "NP", Order.user = NULL, normalize = "counts",
 \arguments{
 \item{X}{OTU table, where taxa are columns and samples are rows of the table.
 It should be a in data frame format with columns corresponding to taxa names.}
+
+\item{infocol}{Index vector of the metadata. We assume user only gives a taxa table,
+but if the metadata of the samples are included in the columns of the input, this option
+needs to be specified.}
 
 \item{Order}{Taxa ordering. The default ordering is the number of occurrences (NP) of the taxa in all samples.
 Other types of order are p-value ordering, number of connected taxa and weighted number of connected taxa,

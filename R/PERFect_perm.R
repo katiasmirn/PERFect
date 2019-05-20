@@ -8,7 +8,7 @@
 #'   Each set of j taxa significance is evaluated by fitting the Skew-Normal, Normal, t or Cauchy distribution
 #'   to the  sampling distribution obtained by permuted taxa labels.
 #'
-#' @usage PERFect_perm(X, Order = "NP", Order.user = NULL, normalize = "counts",
+#' @usage PERFect_perm(X, infocol = NULL, Order = "NP", Order.user = NULL, normalize = "counts",
 #'     algorithm = "fast", center = FALSE, quant = c(0.1, 0.25, 0.5), distr = "sn",
 #'     alpha = 0.1, lag = 3, direction = "left", pvals_sim = NULL,
 #'     k = 10000, dfl_distr = NULL, nbins = 30, hist = FALSE, col = "red",
@@ -16,6 +16,10 @@
 #'
 #' @param X OTU table, where taxa are columns and samples are rows of the table.
 #' It should be a in data frame format with columns corresponding to taxa names.
+#' 
+#' @param infocol Index vector of the metadata. We assume user only gives a taxa table,
+#' but if the metadata of the samples are included in the columns of the input, this option
+#' needs to be specified.
 #'
 #' @param Order Taxa ordering. The default ordering is the number of occurrences (NP) of the taxa in all samples.
 #'  Other types of order are p-value ordering, number of connected taxa and weighted number of connected taxa,
@@ -119,7 +123,7 @@
 #' @export
 
 # Algorithm with parallel processing
-PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
+PERFect_perm <- function(X, infocol = NULL, Order = "NP",   Order.user = NULL,
                          normalize = "counts", algorithm = "fast", center = FALSE,
                          quant = c(0.10, 0.25, 0.5),  distr ="sn",
                          alpha = 0.10, lag = 3, direction ="left",
@@ -127,38 +131,44 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
                          k=10000, dfl_distr = NULL,
                          nbins =30,  hist = TRUE,
                          col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
-
+  
+  #infocol = index vector of other info
+  if(!is.null(infocol)){
+    info <- X[,infocol]
+    X <- X[,-infocol]
+  }
+  
   # Check the format of X
   if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
   #   stop('X must be a data frame or a matrix')
   # if(!(class(X) == "matrix")){X <- as.matrix(X)}
-
+  
   # Check the format of Order
   if(!(Order %in% c("NP","pvals","NC","NCw")))
     stop('Order argument can only be "NP", "pvals", "NC", or "NCw" ')
-
+  
   # Check the format of normalize
   if(!(normalize %in% c("counts","prop","pres")))
     stop('normalize argument can only be "counts", "prop", or "pres" ')
-
+  
   # Check the format of center
   if(class(center) != "logical")
     stop('center argument must be a logical value')
-
+  
   # Check the format of quant
   if(!is.vector(quant)) stop('quant argument must be a vector')
-
+  
   # Check the format of distr
   if(!(distr %in% c("sn","norm","t","cauchy")))
     stop('normalize argument can only be "sn", "norm", "t", or "cauchy" ')
-
+  
   # Check the format of alpha
   if(!is.numeric(alpha)) stop('alpha argument must be a numerical value')
-
+  
   # Check if pvals_sim object is input correctly
   if(class(pvals_sim) != "NULL" & length(pvals_sim$pvals) == 0)
     stop('pvals_sim object must be a result from simultaneous PERFect with taxa abundance ordering')
-
+  
   #Order columns by importance
   if(is.null(Order.user)){
     if(Order == "NP") {Order.vec <- NP_Order(X)}
@@ -168,74 +178,74 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
   } else {
     Order.vec <- Order.user #user-specified ordering of columns of X
   }
-
+  
   #properly order columns of X
   X <- X[,Order.vec]
-
+  
   #remove all-zero OTU columns
   nzero.otu <- apply(X, 2, nnzero) != 0
   X <- X[, nzero.otu]
   p <- dim(X)[2]
   Order.vec <- Order.vec[nzero.otu]
-
+  
   #save non-centered, non-normalized X
   X.orig <- X
-
+  
   #normalize the data
   if(normalize == "prop"){X <- X/apply(X, 1, sum)}
   else if (normalize == "pres"){X[X!=0]<-1}
-
+  
   #center if true
   if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
-
+  
   if(algorithm == "fast"){
-
+    
     #index for iteration
     n <- sum_n(dim(X)[2])$idx-1
-
+    
     #initiate a vector to store p-values
     pvals <- rep(NA,p-1)
-
+    
     #calculate DFL values and FL values
     Order_Ind <- rep(1:length(Order.vec)) #convert to numeric indicator values
     DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec)
     FL <- FiltLoss(X = X, Order.user = Order.vec, type =  "Ind", Plot = TRUE)$FL
-
+    
     #name p-values
     names(pvals) <- names(DFL$DFL)
-
+    
     #For each taxon j, create a distribution of its DFL's by permuting the labels
     if(is.null(dfl_distr)){dfl_distr <- sampl_distr(X = X, k=k)}
-
+    
     #convert to log differences
     lfl <- lapply(dfl_distr, function(x) log(x[!x==0]))
-
+    
     #initiate a vector for OTUs to be double checked
     check = c()
-
+    
     # Calculate the number of cores
     no_cores <- parallel::detectCores()-1
-
+    
     # Initiate cluster, start parrallel processing
     cl <- parallel::makeCluster(no_cores)
-
+    
     if(distr == "norm"){
       # load packages for each core in order to use function qmedist and sn distribution
       parallel::clusterEvalQ(cl,{
         library(fitdistrplus)
       })
-
+      
       # extract the lfl of checked OTUs
       lfl_main = lfl[n]
-
+      
       #check quantile for normal distribution fit
       if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
       print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")}
       if(length(quant) < 2){stop("At least two quantile values must be specified.")}
-
+      
       #load variables for each core
       parallel::clusterExport(cl,c("distr","quant"),envir=environment())
-
+      
       #find the first significant OTU among OTU of index n
       #fit <- parallel::parLapply(cl, lfl_main, function(x) fitdist(x, distr, method="qme", probs=quant))
       fit <- parallel::parLapply(cl, lfl_main, function(x) qmedist(x, distr, probs=quant))
@@ -244,7 +254,8 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
         pvals[n[i]] <- pnorm(q=log(DFL$DFL[n[i]]),mean = est[[i]][1], sd = est[[i]][2],
                              lower.tail = FALSE, log.p = FALSE)
         #calculate a few p-values before that first significant OTU
-        if(pvals[n[i]] < 0.1){
+        if(pvals[n[i]] < alpha){
+          stop_idx = n[i-1]
           temp = c((n[i-1]+1):(n[i]-1),n[i]+1, n[i]+2)
           lfl_temp = lfl[temp]
           #fit <- parallel::parLapply(cl,lfl_temp, function(x) fitdist(x, distr, method = "qme", probs=quant))
@@ -259,41 +270,51 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
       }
       # find the potential cut off index
       potential <- which(pvals == min(pvals, na.rm = T))
+      
+      # check the 10% most recent interval for unsual DFL values
+      for(i in round((match(stop_idx,n)*9/10)):match(stop_idx,n)){
+        check = c(check, names(which(DFL$DFL[n[i]:n[(i+1)]] > max(DFL$DFL[n[i+1]],DFL$DFL[n[i]]) &
+                                       FL[n[i]:n[(i+1)]] > max(FL[n[i+1]],FL[n[i]])
+        )
+        )
+        )
+      }
+      #Identify OTU with DFL higher than the potential cut off taxon 
       check = c(check, names(which(DFL$DFL[1:(potential-1)] > DFL$DFL[potential] &
                                      FL[1:(potential-1)] > FL[potential])))
-
+      
       if (length(check) !=0){
-      check_idx = which(names(pvals)%in% check)
-      # Calculate their pvalues
-      lfl_check = lfl[check_idx]
-      #fit <- parallel::parLapply(cl,lfl_check, function(x) fitdist(x, distr,method = "qme", probs=quant))
-      fit <- parallel::parLapply(cl,lfl_check, function(x) qmedist(x, distr, probs=quant))
-      est <- lapply(fit, function(x) x$estimate)
-      for(j in 1:length(check_idx)){
-        pvals[check_idx[j]] <- pnorm(q=log(DFL$DFL[check_idx[j]]),mean = est[[j]][1], sd = est[[j]][2],
-                                     lower.tail = FALSE, log.p = FALSE)
-      }
+        check_idx = which(names(pvals)%in% check)
+        # Calculate their pvalues
+        lfl_check = lfl[check_idx]
+        #fit <- parallel::parLapply(cl,lfl_check, function(x) fitdist(x, distr,method = "qme", probs=quant))
+        fit <- parallel::parLapply(cl,lfl_check, function(x) qmedist(x, distr, probs=quant))
+        est <- lapply(fit, function(x) x$estimate)
+        for(j in 1:length(check_idx)){
+          pvals[check_idx[j]] <- pnorm(q=log(DFL$DFL[check_idx[j]]),mean = est[[j]][1], sd = est[[j]][2],
+                                       lower.tail = FALSE, log.p = FALSE)
+        }
       }
     }
-
+    
     #fit the distribution
     if(distr == "sn"){
-
+      
       # load packages for each core in order to use function qmedist and sn distribution
       parallel::clusterEvalQ(cl,{
         library(fitdistrplus)
         library(sn)
       })
-
+      
       # starting values to fit the skew normal distribution
       lp <- list(xi = mean(lfl[[1]]), omega = sd(lfl[[1]]), alpha = 1.5)
-
+      
       #get the sampled values from OTU of index n
       lfl_main = lfl[n]
-
+      
       #load variables for each core
       parallel::clusterExport(cl,c("distr","quant","lp"),envir=environment())
-
+      
       #find the first significant OTU among OTU of index n
       #fit <- parallel::parLapply(cl, lfl_main, function(x) fitdist(x, distr,method = "qme", probs=quant, start=lp))
       suppressWarnings(fit <- parallel::parLapply(cl, lfl_main, function(x) qmedist(x, distr, probs=quant, start=lp)))
@@ -302,6 +323,7 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
         pvals[n[i]] <- 1 - psn(x=log(DFL$DFL[n[i]]),xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3])
         #calculate a few p-values before that first significant OTU
         if(pvals[n[i]] < alpha){
+          stop_idx = n[i-1]
           temp = c((n[i-1]+1):(n[i]-1),n[i]+1, n[i]+2)
           lfl_temp = lfl[temp]
           #fit <- parallel::parLapply(cl,lfl_temp, function(x) fitdist(x, distr, method = "qme", probs=quant, start=lp))
@@ -315,36 +337,37 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
       }
       # find the potential cut off index
       potential <- which(pvals == min(pvals, na.rm = T))
-
-      # Identify OTUs with high DFL in between those checked OTUs of index n above
-      # for(i in 1:(length(n)-1)){
-      #   check = c(check, names(which(DFL$DFL[n[i]:n[(i+1)]] > max(DFL$DFL[n[i+1]],DFL$DFL[n[i]]) &
-      #                                  FL[n[i]:n[(i+1)]] > max(FL[n[i+1]],FL[n[i]])
-      #                               )
-      #                         )
-      #            )
-      # }
+      
+      # check the 10% most recent interval for unsual DFL values
+      for(i in round((match(stop_idx,n)*9/10)):match(stop_idx,n)){
+        check = c(check, names(which(DFL$DFL[n[i]:n[(i+1)]] > max(DFL$DFL[n[i+1]],DFL$DFL[n[i]]) &
+                                       FL[n[i]:n[(i+1)]] > max(FL[n[i+1]],FL[n[i]])
+        )
+        )
+        )
+      }
+      #Identify OTU with DFL higher than the potential cut off taxon 
       check = c(check, names(which(DFL$DFL[1:(potential-1)] > DFL$DFL[potential] &
                                      FL[1:(potential-1)] > FL[potential])
-                             )
-                )
+      )
+      )
       if (length(check) != 0){
-      check_idx = which(names(pvals)%in% check)
-      # Calculate their pvalues
-      lfl_check = lfl[check_idx]
-      #fit <- parallel::parLapply(cl,lfl_check, function(x) fitdist(x, distr, method = "qme", probs=quant, start=lp))
-      suppressWarnings(fit <- parallel::parLapply(cl,lfl_check, function(x) qmedist(x, distr, probs=quant, start=lp)))
-      est <- lapply(fit, function(x) x$estimate)
-      for(j in 1:length(check_idx)){
-        pvals[check_idx[j]] <- 1 - psn(x=log(DFL$DFL[check_idx[j]]),
-                                       xi = est[[j]][1], omega = est[[j]][2], alpha = est[[j]][3])
-      }
+        check_idx = which(names(pvals)%in% check)
+        # Calculate their pvalues
+        lfl_check = lfl[check_idx]
+        #fit <- parallel::parLapply(cl,lfl_check, function(x) fitdist(x, distr, method = "qme", probs=quant, start=lp))
+        suppressWarnings(fit <- parallel::parLapply(cl,lfl_check, function(x) qmedist(x, distr, probs=quant, start=lp)))
+        est <- lapply(fit, function(x) x$estimate)
+        for(j in 1:length(check_idx)){
+          pvals[check_idx[j]] <- 1 - psn(x=log(DFL$DFL[check_idx[j]]),
+                                         xi = est[[j]][1], omega = est[[j]][2], alpha = est[[j]][3])
+        }
       }
     }
-
+    
     # End the parallel processing
     parallel::stopCluster(cl)
-
+    
     #smooth p-values
     non_na_ind <- which(!is.na(pvals))
     pvals_avg <- pvals
@@ -352,35 +375,35 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
     #replace na's with original values
     pvals_avg[non_na_ind][is.na(pvals_avg[non_na_ind])] <- pvals[non_na_ind][is.na(pvals_avg[non_na_ind])]
     names(pvals_avg) <- names(pvals)[(length(pvals)-length(pvals_avg)+1):length(pvals)]
-
+    
     #select the first significant taxon
     Ind = which(pvals_avg <=alpha & pvals_avg > 0)[1]
-
+    
     if (length(Ind !=0)) {Ind <- min(Ind)}
     else{Ind <- dim(X)[2]-1
     warning("no taxa are significant at a specified alpha level")}
-
+    
     #if jth DFL is significant, then throw away all taxa 1:j
     filtX <- X.orig[,-(1:Ind)]
-
-    return(list(filtX = filtX, pvals = pvals_avg))
+    
+    return(list(filtX = filtX, info = info, pvals = pvals_avg))
   }  else if(algorithm == "full"){
     pvals <- rep(0,p-1)
     hist_list <- lapply(1:(p-1),function(x) NULL)
-
+    
     #calculate DFL values
     Order_Ind <- rep(1:length(Order.vec)) #convert to numeric indicator values
     DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec)
-
+    
     #name p-values
     names(pvals) <- names(DFL$DFL)
-
+    
     #For each taxon j, create a distribution of its DFL's by permuting the labels
     if(is.null(dfl_distr)){dfl_distr <- sampl_distr(X = X, k=k)}
-
+    
     #convert to log differences
     lfl <- lapply(dfl_distr, function(x) log(x[!x==0]))
-
+    
     #fit the distribution
     if(distr == "norm"){
       if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
@@ -393,7 +416,7 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
         pvals[i] <- pnorm(q=log(DFL$DFL[i]), mean = est[[i]][1], sd = est[[i]][2],
                           lower.tail = FALSE, log.p = FALSE)}
     }
-
+    
     if(distr == "sn"){
       #lp <- lapply(lfl, function(x) list(xi = mean(x), omega = sd(x), alpha = 1.5))
       lp <- list(xi = mean(lfl[[1]]), omega = sd(lfl[[1]]), alpha = 1.5)
@@ -404,12 +427,12 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
         pvals[i] <- 1 - psn(x=log(DFL$DFL[i]),
                             xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3])}
     }
-
+    
     if(hist == TRUE){
       lfl <- lapply(lfl, function(x) data.frame(x))
       #build histograms for each taxon j
       for(i in 1:(p-1)) {
-
+        
         #add a histogram
         lfl <- data.frame(log(dfl_distr[[i]][!dfl_distr[[i]]==0]))
         if(length(dfl_distr[[i]][dfl_distr[[i]]==0])>0){
@@ -426,7 +449,7 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
                 panel.grid.major = element_line(colour = "grey90"),
                 axis.text.x  = element_text( size=10))+
           ggtitle("") + xlab("log differences in filtering loss") + ylab("Density")
-
+        
         #estimate using normal
         if(distr == "norm"){
           #add density line to the plot
@@ -434,7 +457,7 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
                                        args = list(mean = est[[i]][1], sd = est[[i]][2]), colour=linecol)
           hist_list[[i]] <- hist
         }
-
+        
         #estimate using skew normal
         if(distr == "sn"){
           hist <- hist + stat_function(fun = dsn,
@@ -448,7 +471,7 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
     #replace na's with original values
     pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
     names(pvals_avg) <- names(pvals)
-
+    
     #select taxa that are kept in the data set at significance level alpha
     Ind <- which(pvals_avg <=alpha)
     if (length(Ind !=0)) {Ind <- min(Ind)}
@@ -456,9 +479,8 @@ PERFect_perm <- function(X,  Order = "NP",   Order.user = NULL,
     warning("no taxa are significant at a specified alpha level")}
     #if jth DFL is significant, then throw away all taxa 1:j
     filtX <- X.orig[,-(1:Ind)]
-    return(list(filtX = filtX, fit = fit, hist = hist_list,
+    return(list(filtX = filtX,info = info, fit = fit, hist = hist_list,
                 est =est, dfl_distr=dfl_distr, pvals = pvals_avg ))
   }# end if(algorithm == "full")
-
+  
 }
-

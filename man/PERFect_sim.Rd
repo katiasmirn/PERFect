@@ -4,7 +4,7 @@
 \alias{PERFect_sim}
 \title{Simulation PERFect filtering for microbiome data}
 \usage{
-PERFect_sim(X, Order = "NP", Order.user = NULL, normalize = "counts",
+PERFect_sim(X,infocol = NULL, Order = "NP", Order.user = NULL, normalize = "counts",
          center = FALSE, quant = c(0.1, 0.25, 0.5), distr = "sn",
          alpha = 0.1, lag = 3, direction = "left", pvals_sim = NULL,
          nbins = 30, col = "red", fill = "green", hist_fill = 0.2,
@@ -12,7 +12,12 @@ PERFect_sim(X, Order = "NP", Order.user = NULL, normalize = "counts",
 }
 \arguments{
 \item{X}{OTU table, where taxa are columns and samples are rows of the table.
-It should be a in data frame format with columns corresponding to taxa names.}
+It should be a in data frame format with columns corresponding to taxa names.
+It could contains columns of metadata.}
+
+\item{infocol}{Index vector of the metadata. We assume user only gives a taxa table,
+but if the metadata of the samples are included in the columns of the input, this option
+needs to be specified.}
 
 \item{Order}{Taxa ordering. The default ordering is the number of occurrences (NP) of the taxa in all samples.
 Other types of order are p-value ordering, number of connected taxa and weighted number of connected taxa,

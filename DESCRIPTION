@@ -16,7 +16,8 @@ Description: PERFect is a  novel permutation filtering approach designed to addr
     and provides a uniform data-driven filtering criteria for real microbiome data sets.
 Depends: R (>= 3.5.0), Matrix (>= 1.2.14), ggplot2 (>= 3.0.0),
         fitdistrplus (>= 1.0.12), sn (>= 1.5.2)
-Imports: psych (>= 1.8.4), zoo (>= 1.8.3)
+biocViews:
+Imports: zoo (>= 1.8.3), psych (>= 1.8.4)
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
@@ -24,4 +25,4 @@ Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
 RoxygenNote: 6.1.0
 NeedsCompilation: no
-Packaged: 2019-03-10 05:19:52 UTC; Kwee
+Packaged: 2019-05-19 05:05:43 UTC; Quy
