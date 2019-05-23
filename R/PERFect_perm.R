@@ -132,6 +132,7 @@ PERFect_perm <- function(X, infocol = NULL, Order = "NP",   Order.user = NULL,
                          nbins =30,  hist = TRUE,
                          col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
   
+  info <- NULL
   #infocol = index vector of other info
   if(!is.null(infocol)){
     info <- X[,infocol]

@@ -144,7 +144,7 @@ PERFect_sim <- function(X, infocol= NULL,  Order = "NP",   Order.user = NULL,
   
   pDFL <- NULL
   phist <- NULL
-  
+  info <- NULL
   #infocol = index vector of other info
   if(!is.null(infocol)){
     info <- X[,infocol]
