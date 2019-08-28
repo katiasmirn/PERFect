@@ -2,6 +2,7 @@ Package: PERFect
 Type: Package
 Title: Permutation filtration for microbiome data
 Version: 0.2.1
+Date: 2019-09-02
 Author: 
     Ekaterina Smirnova <ekaterina.smirnova@vcuhealth.org>,
       Quy Cao <quy.cao@umontana.edu>
