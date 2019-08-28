@@ -11,27 +11,19 @@ Description:
     two unsolved problems in microbiome data processing: (i) define and  quantify 
     loss due to filtering by implementing thresholds, and (ii) introduce and evaluate
     a permutation  test for  filtering loss to provide a measure of excessive filtering.
-Depends: 
-    R (>= 3.6.0),
-    sn (>= 1.5.2)
-Imports:
-    ggplot2 (>= 3.0.0),
-    phyloseq (>= 1.28.0),
-    zoo (>= 1.8.3),
-    psych (>= 1.8.4),
-    stats (>= 3.6.0),
-    Matrix (>= 1.2.14),
-    fitdistrplus (>= 1.0.12)
+Depends: R (>= 3.6.0), sn (>= 1.5.2)
+Imports: ggplot2 (>= 3.0.0), phyloseq (>= 1.28.0), zoo (>= 1.8.3),
+        psych (>= 1.8.4), stats (>= 3.6.0), Matrix (>= 1.2.14),
+        fitdistrplus (>= 1.0.12)
 License: Artistic-2.0
 Encoding: UTF-8
 LazyData: false
 BugReports: https://github.com/katiasmirn/PERFect/issues
 URL: https://github.com/katiasmirn/PERFect
-Suggests:
-    knitr,
-    rmarkdown,
-    kableExtra,
-    ggpubr
-biocViews: Software, Microbiome, Sequencing, Classification, Metagenomics
+Suggests: knitr, rmarkdown, kableExtra, ggpubr
+biocViews: Software, Microbiome, Sequencing, Classification,
+        Metagenomics
 VignetteBuilder: knitr
 RoxygenNote: 6.1.1
+NeedsCompilation: no
+Packaged: 2019-08-28 20:38:07 UTC; CaoQ1
