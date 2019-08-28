@@ -1,0 +1,10 @@
+    
+citHeader("To cite PERFect in publications, or otherwise credit, please use:")
+
+citEntry(entry = "article",
+  author = "Ekaterina Smirnova, Snehalata Huzurbazar and Farhad Jafari",
+  journal = "Biostatistics",
+  title = "PERFect: PERmutation Filtering test for microbiome data",
+  year = "2018",
+  Url = "https://doi.org/10.1093/biostatistics/kxy020",
+)
