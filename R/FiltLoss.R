@@ -16,13 +16,15 @@
 #'  denoted as \code{"NC"}, \code{"NCw"} respectively. More details about taxa ordering are described in Smirnova et al.
 #'  User can also specify their preference order with Order.user.
 #'
+#' @param Order.user User's taxa ordering. This argument takes a character vector of ordered taxa names.
+#'
 #' @param type Type of filtering loss calculation.
 #' \describe{
 #' \item{\code{"Ind"}}{Individual taxon's filtering loss FL_u(j)}
 #' \item{\code{"Cumu"}}{Cumulative filtering loss FL(J) due to removing a set of taxa J}
 #' }
 #'
-#' @param PlotA binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss.
+#' @param Plot Binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss.
 #'
 #' @details
 #'
@@ -103,12 +105,12 @@ FiltLoss <- function(X, Order = "NP", Order.user = NULL, type = "Cumu", Plot = T
   }
   X <- X[,Order.vec]#properly order columns of X
 
-  Order_Ind <- 1:length(Order.vec)
+  Order_Ind <- seq_len(length(Order.vec))
   Netw <- t(X)%*%X
 
   #Taxa at the top of the list have smallest number of connected nodes
-  for (i in 1:p){
-    if (type == "Cumu") {Ind <- Order_Ind[-(1:i)]}
+  for (i in seq_len(p)){
+    if (type == "Cumu") {Ind <- Order_Ind[-seq_len(i)]}
     else{Ind <- Order_Ind[-i]}
 
     #define matrix X_{-J}'X_{-J} for the choice of cumulative or individual filtering loss
@@ -123,9 +125,9 @@ FiltLoss <- function(X, Order = "NP", Order.user = NULL, type = "Cumu", Plot = T
   if(Plot == TRUE){
 
     #Plot Full Norm reduction
-    df <- data.frame(Order.vec, rep(1:length(FL)), FL)
+    df <- data.frame(Order.vec, rep(seq_len(length(FL))), FL)
     names(df)[2] <- "x"
-    Lab <- 1:length(Order.vec)
+    Lab <- seq_len(length(Order.vec))
     df <- cbind(Lab, df)
 
     #Plots

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utility_functions.R
 \name{NC_Order}
 \alias{NC_Order}
-\title{Taxa importance ordering by the number ofconnected taxa}
+\title{Taxa importance ordering by the number of connected taxa}
 \usage{
 NC_Order(Counts)
 }
@@ -14,7 +14,7 @@ It should be a in data frame format with columns corresponding to taxa names.}
 NC Taxa names in increasing  order of the number of connected taxa
 }
 \description{
-Taxa importance ordering by the number ofconnected taxa
+Taxa importance ordering by the number of connected taxa
 }
 \examples{
 data(mock2)

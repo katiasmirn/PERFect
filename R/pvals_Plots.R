@@ -77,17 +77,17 @@ pvals_Plots <- function(PERFect, X, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.
   #overlay individual filtering loss information using points size
   #plot p-values
   Ind <- which(names(res_FLu) %in% names(pvals))
-  df <- data.frame(seq(1:length(pvals)),
+  df <- data.frame(seq_len(length(pvals)),
                    pvals,
                    res_FLu[Ind],
                    FLu_vals[Ind])
   names(df) <- c("Taxa", "p_value", "FLu", "Quantiles")
   p_pvals <- ggplot(df) + geom_point( aes(x = Taxa, y = p_value, color = Quantiles)) +
-  ggtitle("Permutation PERFect p-values") +
-  theme(panel.background = element_rect(fill = "white"),
-        panel.grid.major = element_line(colour = "grey90"),
-        axis.text.x  = element_text( size=10,colour="black", angle = 90, hjust = 1))+
-  guides(color=guide_legend(title="FLu Quantiles"))
+    ggtitle("Permutation PERFect p-values") +
+    theme(panel.background = element_rect(fill = "white"),
+          panel.grid.major = element_line(colour = "grey90"),
+          axis.text.x  = element_text( size=10,colour="black", angle = 90, hjust = 1))+
+    guides(color=guide_legend(title="FLu Quantiles"))
   #add alpha level horizontal line info
 
   p_pvals <- p_pvals + geom_hline(yintercept=alpha, color="red", linetype="dashed")

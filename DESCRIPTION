@@ -1,34 +1,37 @@
 Package: PERFect
 Type: Package
 Title: Permutation filtration for microbiome data
-Version: 1.1.1
-Author: Ekaterina Smirnova [aut, cre]
-      Quy Cao [cre]
+Version: 0.2.1
+Author: 
+    Ekaterina Smirnova <ekaterina.smirnova@vcuhealth.org>,
+      Quy Cao <quy.cao@umontana.edu>
 Maintainer: Quy Cao <quy.cao@umontana.edu>
-Description: PERFect is a  novel permutation filtering approach designed to address
+Description: 
+    PERFect is a  novel permutation filtering approach designed to address
     two unsolved problems in microbiome data processing: (i) define and  quantify 
     loss due to filtering by implementing thresholds, and (ii) introduce and evaluate
     a permutation  test for  filtering loss to provide a measure of excessive filtering.
-    Methods are assessed on two `mock' experiment data sets, where the true taxa compositions are known,
-    and are applied to  a publicly available vaginal microbiome data set.
-    The  method correctly removes contaminant  taxa in `mock'  data sets,
-    quantifies and visualizes the corresponding filtering loss,
-    and provides a uniform data-driven filtering criteria for real microbiome data sets.
 Depends: 
-    R (>= 3.5.0),
-    Matrix (>= 1.2.14),
-    ggplot2 (>= 3.0.0),
-    fitdistrplus (>= 1.0.12),
+    R (>= 3.6.0),
     sn (>= 1.5.2)
-biocViews:
 Imports:
+    ggplot2 (>= 3.0.0),
+    phyloseq (>= 1.28.0),
     zoo (>= 1.8.3),
-    psych (>= 1.8.4)
-License: GPL (>= 3)
+    psych (>= 1.8.4),
+    stats (>= 3.6.0),
+    Matrix (>= 1.2.14),
+    fitdistrplus (>= 1.0.12)
+License: Artistic-2.0
 Encoding: UTF-8
-LazyData: true
+LazyData: false
+BugReports: https://github.com/katiasmirn/PERFect/issues
+URL: https://github.com/katiasmirn/PERFect
 Suggests:
     knitr,
-    rmarkdown
+    rmarkdown,
+    kableExtra,
+    ggpubr
+biocViews: Software, Microbiome, Sequencing, Classification, Metagenomics
 VignetteBuilder: knitr
 RoxygenNote: 6.1.1

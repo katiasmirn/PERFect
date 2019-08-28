@@ -15,13 +15,15 @@ Other types of order are number of connected taxa and weighted number of connect
 denoted as \code{"NC"}, \code{"NCw"} respectively. More details about taxa ordering are described in Smirnova et al.
 User can also specify their preference order with Order.user.}
 
+\item{Order.user}{User's taxa ordering. This argument takes a character vector of ordered taxa names.}
+
 \item{type}{Type of filtering loss calculation.
 \describe{
 \item{\code{"Ind"}}{Individual taxon's filtering loss FL_u(j)}
 \item{\code{"Cumu"}}{Cumulative filtering loss FL(J) due to removing a set of taxa J}
 }}
 
-\item{PlotA}{binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss.}
+\item{Plot}{Binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss.}
 }
 \value{
 \item{FL}{Filtering loss values}

@@ -24,6 +24,8 @@ Other types of order are p-value ordering, number of connected taxa and weighted
 denoted as \code{"pvals"}, \code{"NC"}, \code{"NCw"} respectively. More details about taxa ordering are described in Smirnova et al.
 User can also specify their preference order with Order.user.}
 
+\item{Order.user}{User's taxa ordering. This argument takes a character vector of ordered taxa names.}
+
 \item{normalize}{Normalizing taxa count. The default option does not normalize taxa count,
 but user can convert the OTU table into a proportion table using the option \code{"prop"}
 or convert it into a presence/absence table using \code{"pres"}.}

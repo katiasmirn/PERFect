@@ -5,10 +5,10 @@
 \title{Permutation PERFect filtering for microbiome data}
 \usage{
 PERFect_perm(X, infocol = NULL, Order = "NP", Order.user = NULL, normalize = "counts",
-    algorithm = "fast", center = FALSE, quant = c(0.1, 0.25, 0.5), distr = "sn",
-    alpha = 0.1, lag = 3, direction = "left", pvals_sim = NULL,
-    k = 10000, dfl_distr = NULL, nbins = 30, hist = FALSE, col = "red",
-    fill = "green", hist_fill = 0.2, linecol = "blue")
+    algorithm = "fast", center = FALSE, quant = c(0.1, 0.25, 0.5),
+    distr = "sn", alpha = 0.1, lag = 3, direction = "left", pvals_sim = NULL,
+    k = 10000, nbins = 30, hist = TRUE, col = "red", fill = "green",
+    hist_fill = 0.2, linecol = "blue")
 }
 \arguments{
 \item{X}{OTU table, where taxa are columns and samples are rows of the table.
@@ -22,6 +22,8 @@ needs to be specified.}
 Other types of order are p-value ordering, number of connected taxa and weighted number of connected taxa,
 denoted as \code{"pvals"}, \code{"NC"}, \code{"NCw"} respectively. More details about taxa ordering are described in Smirnova et al.
 User can also specify their preference order with Order.user.}
+
+\item{Order.user}{User's taxa ordering. This argument takes a character vector of ordered taxa names.}
 
 \item{normalize}{Normalizing taxa count. The default option does not normalize taxa count,
 but user can convert the OTU table into a proportion table using the option \code{"prop"}
@@ -59,6 +61,8 @@ Be aware that the choice of distribution for both methods must be the same.}
 \item{k}{The number of permutations, set to 10000 by default.}
 
 \item{nbins}{Number of bins used to visualize the histogram  of log DFL values, set to 30 by default.}
+
+\item{hist}{Binary TRUE/FALSE value. If TRUE, the function builds histograms for each taxon.}
 
 \item{col}{Graphical parameter for  color of histogram bars border, set to "red" by default.}
 
@@ -111,10 +115,13 @@ res_sim <- PERFect_sim(X=Counts)
 
 #order according to p-values
 pvals_sim <- pvals_Order(Counts, res_sim)
-system.time(res_perm <- PERFect_perm(X = Prop, Order.user = pvals_sim))
 
-#permutation perfect colored by FLu values
-pvals_Plots(PERFect = res_perm, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
+#### Uncomment to run algorithm with parallel processing ith more than 2 cores
+# #obtain permutation PERFEct results using NP taxa ordering
+# res_perm <- PERFect_perm(X = Prop, Order.user = pvals_sim, algorithm = "fast")
+
+# #permutation perfect colored by FLu values
+# pvals_Plots(PERFect = res_perm, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
 }
 \references{
 Azzalini, A. (2005). The skew-normal distribution and related multivariate families. Scandinavian Journal of Statistics, 32(2), 159-188.

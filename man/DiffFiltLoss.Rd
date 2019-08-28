@@ -50,7 +50,7 @@ DFL$DFL
 DFL$p_FL
 }
 \references{
-Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
+Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data', to be submitted.
 }
 \seealso{
 \code{\link{FiltLoss}}

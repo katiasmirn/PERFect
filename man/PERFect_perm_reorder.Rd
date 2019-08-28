@@ -17,6 +17,8 @@ Other types of order are p-value ordering, number of connected taxa and weighted
 denoted as \code{"pvals"}, \code{"NC"}, \code{"NCw"} respectively. More details about taxa ordering are described in Smirnova et al.
 User can also specify their preference order with Order.user.}
 
+\item{Order.user}{User's taxa ordering. This argument takes a character vector of ordered taxa names.}
+
 \item{res_perm}{Output of \code{PERFect_perm()} function.}
 
 \item{normalize}{Normalizing taxa count. The default option does not normalize taxa count,
@@ -67,20 +69,21 @@ Prop <- mock2$Prop
 # Counts data matrix
 Counts <- mock2$Counts
 
-#obtain permutation PERFEct results using NP taxa ordering
-system.time(res_perm <- PERFect_perm(X=Prop, k =2))
+#### Uncomment to run algorithm with parallel processing with more than 2 cores
+# #obtain permutation PERFEct results using NP taxa ordering
+# system.time(res_perm <- PERFect_perm(X=Prop, k = 1000, algorithm = "fast))
 
-#run PERFEct_sim() function and obtain p-values ordering
-res_sim <- PERFect_sim(X=Prop)
+# #run PERFEct_sim() function and obtain p-values ordering
+# res_sim <- PERFect_sim(X=Prop)
 
-#order according to p-values
-pvals_sim <- pvals_Order(Counts, res_sim)
+# #order according to p-values
+# pvals_sim <- pvals_Order(Counts, res_sim)
 
-#update perfect_perm object according to p-values ordering
-res_reorder <- PERFect_perm_reorder(X=Prop,  Order.user = pvals_sim,  res_perm = res_perm)
+# #update perfect_perm object according to p-values ordering
+# res_reorder <- PERFect_perm_reorder(X=Prop,  Order.user = pvals_sim,  res_perm = res_perm)
 
-#permutation perfect colored by FLu values
-pvals_Plots(PERFect = res_perm, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
+# #permutation perfect colored by FLu values
+# pvals_Plots(PERFect = res_perm, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
 }
 \references{
 Azzalini, A. (2005). The skew-normal distribution and related multivariate families. Scandinavian Journal of Statistics, 32(2), 159-188.

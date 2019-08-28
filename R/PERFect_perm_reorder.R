@@ -16,6 +16,8 @@
 #'  denoted as \code{"pvals"}, \code{"NC"}, \code{"NCw"} respectively. More details about taxa ordering are described in Smirnova et al.
 #'  User can also specify their preference order with Order.user.
 #'
+#' @param Order.user User's taxa ordering. This argument takes a character vector of ordered taxa names.
+#'
 #' @param res_perm Output of \code{PERFect_perm()} function.
 #'
 #' @param normalize Normalizing taxa count. The default option does not normalize taxa count,
@@ -69,20 +71,21 @@
 #' # Counts data matrix
 #' Counts <- mock2$Counts
 #'
-#' #obtain permutation PERFEct results using NP taxa ordering
-#' system.time(res_perm <- PERFect_perm(X=Prop, k =2))
+#' #### Uncomment to run algorithm with parallel processing with more than 2 cores
+#' # #obtain permutation PERFEct results using NP taxa ordering
+#' # system.time(res_perm <- PERFect_perm(X=Prop, k = 1000, algorithm = "fast))
 #'
-#' #run PERFEct_sim() function and obtain p-values ordering
-#' res_sim <- PERFect_sim(X=Prop)
+#' # #run PERFEct_sim() function and obtain p-values ordering
+#' # res_sim <- PERFect_sim(X=Prop)
 #'
-#' #order according to p-values
-#' pvals_sim <- pvals_Order(Counts, res_sim)
+#' # #order according to p-values
+#' # pvals_sim <- pvals_Order(Counts, res_sim)
 #'
-#' #update perfect_perm object according to p-values ordering
-#' res_reorder <- PERFect_perm_reorder(X=Prop,  Order.user = pvals_sim,  res_perm = res_perm)
+#' # #update perfect_perm object according to p-values ordering
+#' # res_reorder <- PERFect_perm_reorder(X=Prop,  Order.user = pvals_sim,  res_perm = res_perm)
 #'
-#' #permutation perfect colored by FLu values
-#' pvals_Plots(PERFect = res_perm, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
+#' # #permutation perfect colored by FLu values
+#' # pvals_Plots(PERFect = res_perm, X = Counts, quantiles = c(0.25, 0.5, 0.8, 0.9), alpha=0.05)
 #' @export
 
 PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
@@ -128,7 +131,7 @@ PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
   X.orig <- X
 
   #remove all-zero OTU columns
-  nzero.otu <- apply(X, 2, nnzero) != 0
+  nzero.otu <- apply(X, 2, Matrix::nnzero) != 0
   X <- X[, nzero.otu]
   p <- dim(X)[2]
   Order.vec <- Order.vec[nzero.otu]
@@ -140,16 +143,16 @@ PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
   #center if true
   if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
 
-  Order_Ind <- rep(1:length(Order.vec))#convert to numeric indicator values
+  Order_Ind <- rep(seq_len(length(Order.vec)))#convert to numeric indicator values
   DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec)
   #re-evaluate p-values
   pvals <- rep(0, length(DFL$DFL))
   names(pvals) <- names(DFL$DFL)
-  for (i in 1:length(DFL$DFL)){
+  for (i in seq_len(DFL$DFL)){
     if(distr=="sn"){
       pvals[i] <- 1- psn(x=log(DFL$DFL[i]),
-                     xi = res_perm$est[[i]][1], omega = res_perm$est[[i]][2],
-                     alpha = res_perm$est[[i]][3])
+                         xi = res_perm$est[[i]][1], omega = res_perm$est[[i]][2],
+                         alpha = res_perm$est[[i]][3])
     }
     if(distr == "norm"){
       #calculate p-values
@@ -157,7 +160,7 @@ PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
                         lower.tail = FALSE, log.p = FALSE)
     }
 
-    }
+  }
 
   #re-calculate filtered X
   #smooth p-values
@@ -168,9 +171,9 @@ PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
   Ind <- which(pvals_avg <=alpha)
   if (length(Ind !=0)) {Ind <- min(Ind)}
   else{Ind <- dim(X)[2]-1
-     warning("no taxa are significant at a specified alpha level")}
+  warning("no taxa are significant at a specified alpha level")}
   #if jth DFL is significant, then throw away all taxa 1:j
-  res_perm$filtX <- X.orig[,-(1:Ind)]
+  res_perm$filtX <- X.orig[,-seq_len(Ind)]
   res_perm$pvals <- pvals_avg #end if !is.null(res_perm)
 
   return(res_perm)
