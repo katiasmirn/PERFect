@@ -5,7 +5,7 @@
 #' significance p-values for a different taxa ordering.
 #'
 #' @usage PERFect_perm_reorder(X, Order = "NP", Order.user = NULL, res_perm, normalize = "counts",
-#'     center = FALSE, alpha = 0.1, distr = "sn", lag = 3, direction = "left",
+#'     center = FALSE, alpha = 0.1, distr = "sn", rollmean = TRUE, direction = "left",
 #'     pvals_sim = NULL)
 #'
 #' @param X OTU table, where taxa are columns and samples are rows of the table.
@@ -36,7 +36,8 @@
 #' \item{\code{"cauchy"}}{Cauchy distribution with 2 parameters: location and scale}
 #' }
 #'
-#' @param lag Integer width of the rolling window in rolling average (moving mean), set to 3 by default.
+#' @param rollmean Binary TRUE/FALSE value. If TRUE, rolling average (moving mean) of p-values will be calculated,
+#'  with the lag window set to 3 by default.
 #'
 #' @param direction Character specifying whether the index of the result should be left- or right-aligned
 #'  or centered compared to the rolling window of observations, set to "left" by default.
@@ -52,7 +53,7 @@
 #' @return
 #'
 #' \item{res_perm}{The perfect_perm object updated according to the alternative taxa ordering.
-#' All elements in this list are same as in perfect_perm object given by \code{PERFect()} function}
+#' All elements in this list are same as in perfect_perm object given by \code{PERFect()} function.}
 #'
 #' @references Azzalini, A. (2005). The skew-normal distribution and related multivariate families. Scandinavian Journal of Statistics, 32(2), 159-188.
 #'
@@ -90,43 +91,56 @@
 
 PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
                                  normalize = "counts", center = FALSE, alpha = 0.10, distr = "sn",
-                                 lag = 3, direction ="left", pvals_sim = NULL){
+                                 rollmean = TRUE, direction ="left", pvals_sim = NULL){
   # Check the format of X
-  if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
+  if (!(class(X) %in% c("matrix"))) {
+    X <- as.matrix(X)
+  }
   #   stop('X must be a data frame or a matrix')
   # if(!(class(X) == "matrix")){X <- as.matrix(X)}
 
   # Check the format of Order
-  if(!(Order %in% c("NP","pvals","NC","NCw")))
+  if (!(Order %in% c("NP", "pvals", "NC", "NCw")))
     stop('Order argument can only be "NP", "pvals", "NC", or "NCw" ')
 
   # Check the format of res_perm
-  if(class(res_perm) != "NULL" & length(res_perm$pvals) == 0)
+  if (class(res_perm) != "NULL" & length(res_perm$pvals) == 0)
     stop('res_perm argument must be the output from the function PERFect_perm()')
 
   # Check the format of normalize
-  if(!(normalize %in% c("counts","prop","pres")))
+  if (!(normalize %in% c("counts", "prop", "pres")))
     stop('normalize argument can only be "counts", "prop", or "pres" ')
 
   # Check the format of center
-  if(class(center) != "logical")
+  if (class(center) != "logical")
     stop('center argument must be a logical value')
 
   # Check the format of distr
-  if(!(distr %in% c("sn","norm","t","cauchy")))
+  if (!(distr %in% c("sn", "norm", "t", "cauchy")))
     stop('normalize argument can only be "sn", "norm", "t", or "cauchy" ')
 
   # Check the format of alpha
-  if(!is.numeric(alpha)) stop('alpha argument must be a numerical value')
+  if (!is.numeric(alpha))
+    stop('alpha argument must be a numerical value')
 
   #Order columns by importance
-  if(Order == "NP") {Order.vec <- NP_Order(X)}
-  if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
-  if(Order == "NC"){Order.vec <- NC_Order(X)}
-  if(Order == "NCw"){Order.vec <- NCw_Order(X)}
-  else if (!is.null(Order.user)) {Order.vec = Order.user} #user-specified ordering of columns of X
+  if (Order == "NP") {
+    Order.vec <- NP_Order(X)
+  }
+  if (Order == "pvals") {
+    Order.vec <- pvals_Order(X, pvals_sim)
+  }
+  if (Order == "NC") {
+    Order.vec <- NC_Order(X)
+  }
+  if (Order == "NCw") {
+    Order.vec <- NCw_Order(X)
+  }
+  else if (!is.null(Order.user)) {
+    Order.vec = Order.user
+  } #user-specified ordering of columns of X
 
-  X <- X[,Order.vec]#properly order columns of X
+  X <- X[, Order.vec]#properly order columns of X
   #save non-centered, non-normalized X
   X.orig <- X
 
@@ -137,43 +151,77 @@ PERFect_perm_reorder <- function(X,  Order ="NP",  Order.user = NULL, res_perm,
   Order.vec <- Order.vec[nzero.otu]
 
   #normalize the data
-  if(normalize == "prop"){X <- X/apply(X, 1, sum)}
-  else if (normalize == "pres"){X[X!=0]<-1}
+  if (normalize == "prop") {
+    X <- X / apply(X, 1, sum)
+  }
+  else if (normalize == "pres") {
+    X[X != 0] <- 1
+  }
 
   #center if true
-  if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
+  if (center) {
+    X <- apply(X, 2, function(x) {
+      x - mean(x)
+    })
+  }
 
-  Order_Ind <- rep(seq_len(length(Order.vec)))#convert to numeric indicator values
-  DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec)
+  Order_Ind <-
+    rep(seq_len(length(Order.vec)))#convert to numeric indicator values
+  DFL <-
+    DiffFiltLoss(X = X,
+                 Order_Ind,
+                 Plot = TRUE,
+                 Taxa_Names = Order.vec)
   #re-evaluate p-values
   pvals <- rep(0, length(DFL$DFL))
   names(pvals) <- names(DFL$DFL)
-  for (i in seq_len(DFL$DFL)){
-    if(distr=="sn"){
-      pvals[i] <- 1- psn(x=log(DFL$DFL[i]),
-                         xi = res_perm$est[[i]][1], omega = res_perm$est[[i]][2],
-                         alpha = res_perm$est[[i]][3])
+  for (i in seq_len(DFL$DFL)) {
+    if (distr == "sn") {
+      pvals[i] <- 1 - psn(
+        x = log(DFL$DFL[i]),
+        xi = res_perm$est[[i]][1],
+        omega = res_perm$est[[i]][2],
+        alpha = res_perm$est[[i]][3]
+      )
     }
-    if(distr == "norm"){
+    if (distr == "norm") {
       #calculate p-values
-      pvals[i] <- pnorm(q=log(DFL$DFL[i]), mean = res_perm$est[[i]][1], sd = res_perm$est[[i]][2],
-                        lower.tail = FALSE, log.p = FALSE)
+      pvals[i] <-
+        pnorm(
+          q = log(DFL$DFL[i]),
+          mean = res_perm$est[[i]][1],
+          sd = res_perm$est[[i]][2],
+          lower.tail = FALSE,
+          log.p = FALSE
+        )
     }
 
   }
 
   #re-calculate filtered X
   #smooth p-values
-  pvals_avg <- zoo::rollmean(pvals, k=lag, align=direction,  fill=NA )
+  if (rollmean){
+  pvals_avg <-
+    zoo::rollmean(pvals,
+                  k = 3,
+                  align = direction,
+                  fill = NA)
+  } else {
+    pvals_avg <- pvals
+  }
   #replace na's with original values
   pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
   #select taxa that are kept in the data set at significance level alpha
-  Ind <- which(pvals_avg <=alpha)
-  if (length(Ind !=0)) {Ind <- min(Ind)}
-  else{Ind <- dim(X)[2]-1
-  warning("no taxa are significant at a specified alpha level")}
+  Ind <- which(pvals_avg <= alpha)
+  if (length(Ind != 0)) {
+    Ind <- min(Ind)
+  }
+  else{
+    Ind <- dim(X)[2] - 1
+    warning("no taxa are significant at a specified alpha level")
+  }
   #if jth DFL is significant, then throw away all taxa 1:j
-  res_perm$filtX <- X.orig[,-seq_len(Ind)]
+  res_perm$filtX <- X.orig[, -seq_len(Ind)]
   res_perm$pvals <- pvals_avg #end if !is.null(res_perm)
 
   return(res_perm)

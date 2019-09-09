@@ -11,7 +11,7 @@
 #' It should be a in data frame format with columns corresponding to taxa names.
 #' @param J A vector of J taxa to be removed. It must be subset of column names of X.
 #'
-#' @return FL Filtering loss value
+#' @return FL Filtering loss value.
 #'
 #' @references Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
 #'

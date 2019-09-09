@@ -22,7 +22,7 @@
 #'
 #' @usage PERFect_sim(X,infocol = NULL, Order = "NP", Order.user = NULL, normalize = "counts",
 #'          center = FALSE, quant = c(0.1, 0.25, 0.5), distr = "sn",
-#'          alpha = 0.1, lag = 3, direction = "left", pvals_sim = NULL,
+#'          alpha = 0.1, rollmean = TRUE, direction = "left", pvals_sim = NULL,
 #'          nbins = 30, col = "red", fill = "green", hist_fill = 0.2,
 #'          linecol = "blue")
 #'
@@ -62,7 +62,8 @@
 #' }
 #' @param alpha Test level alpha, set to 0.1 by default.
 #'
-#' @param lag Integer width of the rolling window in rolling average (moving mean), set to 3 by default.
+#' @param rollmean Binary TRUE/FALSE value. If TRUE, rolling average (moving mean) of p-values will be calculated,
+#'  with the lag window set to 3 by default.
 #'
 #' @param direction Character specifying whether the index of the result should be left- or right-aligned
 #'  or centered compared to the rolling window of observations, set to "left" by default.
@@ -90,19 +91,21 @@
 #'
 #' @return
 #'
-#' \item{filtX}{Filtered OTU table}
+#' A list is returned containing:
 #'
-#' \item{pvals}{P-values of the test}
+#' \item{filtX}{Filtered OTU table.}
 #'
-#' \item{DFL}{Differences in filtering loss values}
+#' \item{pvals}{P-values of the test.}
 #'
-#' \item{fit}{Fitted values and further goodness of fit details passed from the \code{fitdistr()} function}
+#' \item{DFL}{Differences in filtering loss values.}
 #'
-#' \item{hist}{Histogram of log differences in filtering loss}
+#' \item{fit}{Fitted values and further goodness of fit details passed from the \code{fitdistr()} function.}
 #'
-#' \item{est}{Estimated distribution parameters}
+#' \item{hist}{Histogram of log differences in filtering loss.}
 #'
-#' \item{pDFL}{Plot of differences in filtering loss values}
+#' \item{est}{Estimated distribution parameters.}
+#'
+#' \item{pDFL}{Plot of differences in filtering loss values.}
 #'
 #' @references Azzalini, A. (2005). The skew-normal distribution and related multivariate families. Scandinavian Journal of Statistics, 32(2), 159-188.
 #'
@@ -141,7 +144,7 @@
 PERFect_sim <- function(X, infocol= NULL,  Order = "NP",   Order.user = NULL,
                         normalize = "counts", center = FALSE,
                         quant = c(0.10, 0.25, 0.5),  distr ="sn",
-                        alpha = 0.10, lag = 3, direction ="left",
+                        alpha = 0.10, rollmean = TRUE, direction ="left",
                         pvals_sim = NULL,
                         nbins =30,
                         col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
@@ -150,52 +153,64 @@ PERFect_sim <- function(X, infocol= NULL,  Order = "NP",   Order.user = NULL,
   phist <- NULL
   info <- NULL
   #infocol = index vector of other info
-  if(!is.null(infocol)){
-    info <- X[,infocol]
-    X <- X[,-infocol]
+  if (!is.null(infocol)) {
+    info <- X[, infocol]
+    X <- X[, -infocol]
   }
 
   # Check the format of X
-  if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
+  if (!(class(X) %in% c("matrix"))) {
+    X <- as.matrix(X)
+  }
   #  stop('X must be a data frame or a matrix')
   #if(!(class(X) == "matrix")){X <- as.matrix(X)}
 
   # Check the format of Order
-  if(!(Order %in% c("NP","pvals","NC","NCw")))
+  if (!(Order %in% c("NP", "pvals", "NC", "NCw")))
     stop('Order argument can only be "NP", "pvals", "NC", or "NCw" ')
 
   # Check the format of normalize
-  if(!(normalize %in% c("counts","prop","pres")))
+  if (!(normalize %in% c("counts", "prop", "pres")))
     stop('normalize argument can only be "counts", "prop", or "pres" ')
 
   # Check the format of center
-  if(class(center) != "logical")
+  if (class(center) != "logical")
     stop('center argument must be a logical value')
 
   # Check the format of quant
-  if(!is.vector(quant)) stop('quant argument must be a vector')
+  if (!is.vector(quant))
+    stop('quant argument must be a vector')
 
   # Check the format of distr
-  if(!(distr %in% c("sn","norm","t","cauchy")))
+  if (!(distr %in% c("sn", "norm", "t", "cauchy")))
     stop('normalize argument can only be "sn", "norm", "t", or "cauchy" ')
 
   # Check the format of alpha
-  if(!is.numeric(alpha)) stop('alpha argument must be a numerical value')
+  if (!is.numeric(alpha))
+    stop('alpha argument must be a numerical value')
 
   # Check if pvals_sim object is input correctly
-  if(class(pvals_sim) != "NULL" & length(pvals_sim$pvals) == 0)
+  if (class(pvals_sim) != "NULL" & length(pvals_sim$pvals) == 0)
     stop('pvals_sim object must be a result from simultaneous PERFect with taxa abundance ordering')
 
   #Order columns by importance
-  if(is.null(Order.user)){
-    if(Order == "NP") {Order.vec <- NP_Order(X)}
-    if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
-    if(Order == "NC"){Order.vec <- NC_Order(X)}
-    if(Order == "NCw"){Order.vec <- NCw_Order(X)}
+  if (is.null(Order.user)) {
+    if (Order == "NP") {
+      Order.vec <- NP_Order(X)
+    }
+    if (Order == "pvals") {
+      Order.vec <- pvals_Order(X, pvals_sim)
+    }
+    if (Order == "NC") {
+      Order.vec <- NC_Order(X)
+    }
+    if (Order == "NCw") {
+      Order.vec <- NCw_Order(X)
+    }
   } else {
     Order.vec <- Order.user #user-specified ordering of columns of X
   }
-  X <- X[,Order.vec]#properly order columns of X
+  X <- X[, Order.vec]#properly order columns of X
 
   #remove all-zero OTU columns
   nzero.otu <- apply(X, 2, Matrix::nnzero) != 0
@@ -207,15 +222,28 @@ PERFect_sim <- function(X, infocol= NULL,  Order = "NP",   Order.user = NULL,
   X.orig <- X
 
   #normalize the data
-  if(normalize == "prop"){X <- X/apply(X, 1, sum)}
-  else if (normalize == "pres"){X[X!=0]<-1}
+  if (normalize == "prop") {
+    X <- X / apply(X, 1, sum)
+  }
+  else if (normalize == "pres") {
+    X[X != 0] <- 1
+  }
 
   #center if true
-  if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
+  if (center) {
+    X <- apply(X, 2, function(x) {
+      x - mean(x)
+    })
+  }
 
   #calculate DFL values
-  Order_Ind <- rep(seq_len(length(Order.vec)))#convert to numeric indicator values
-  DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec)
+  Order_Ind <-
+    rep(seq_len(length(Order.vec)))#convert to numeric indicator values
+  DFL <-
+    DiffFiltLoss(X = X,
+                 Order_Ind,
+                 Plot = TRUE,
+                 Taxa_Names = Order.vec)
   #alternative calculation of filtering loss using presise formula
   #Function to calculate j^th DFL loss
 
@@ -223,78 +251,179 @@ PERFect_sim <- function(X, infocol= NULL,  Order = "NP",   Order.user = NULL,
   lfl <- data.frame(Taxa, log(DFL$DFL))
   names(lfl) <- c("Taxa", "DFL")
   #plot histogram
-  hist <- ggplot(data = lfl, aes(lfl$DFL)) + geom_histogram(bins = nbins, aes(y=..density..),
-                                                            col = col, fill = fill, alpha =hist_fill)+
-    theme(panel.background = element_rect(fill = "white"),
-          panel.grid.major = element_line(colour = "grey90"),
-          axis.text.x  = element_text( size=10))+
+  hist <-
+    ggplot(data = lfl, aes(lfl$DFL)) + geom_histogram(
+      bins = nbins,
+      aes(y = ..density..),
+      col = col,
+      fill = fill,
+      alpha = hist_fill
+    ) +
+    theme(
+      panel.background = element_rect(fill = "white"),
+      panel.grid.major = element_line(colour = "grey90"),
+      axis.text.x  = element_text(size = 10)
+    ) +
     ggtitle("") + xlab("log differences in filtering loss") + ylab("Density")
   #estimate using normal
-  if(distr == "norm"){
-    if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
-    print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")}
-    if(length(quant) < 2){stop("At least two quantile values must be specified.")}
-    fit <- fitdistrplus::qmedist(lfl$DFL, distr, probs=quant)
+  if (distr == "norm") {
+    if (length(quant) > 2) {
+      quant <- quant[(length(quant) - 1):length(quant)]
+      print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")
+    }
+    if (length(quant) < 2) {
+      stop("At least two quantile values must be specified.")
+    }
+    fit <- fitdistrplus::qmedist(lfl$DFL, distr, probs = quant)
     est <- fit$estimate
     #add density line to the plot
-    hist <- hist + stat_function(fun = dnorm, args = list(mean = est[1], sd = est[2]), colour=linecol)
+    hist <-
+      hist + stat_function(
+        fun = dnorm,
+        args = list(mean = est[1], sd = est[2]),
+        colour = linecol
+      )
     #calculate p-values
-    pvals <- pnorm(q=lfl$DFL, mean = est[1], sd = est[2], lower.tail = FALSE, log.p = FALSE)
+    pvals <-
+      pnorm(
+        q = lfl$DFL,
+        mean = est[1],
+        sd = est[2],
+        lower.tail = FALSE,
+        log.p = FALSE
+      )
   }
   #estimate using t-distribution
-  if(distr == "t"){
-    if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
-    print("Warning: more than 2 quantile values are given. \nLargest 2  quantiles are used.")}
-    if(length(quant) < 2){stop("At least 2 quantile value must be specified.")}
-    fit <- fitdistrplus::qmedist(lfl$DFL, distr, probs=quant, start=list(df=2, ncp = mean(lfl$DFL)))
+  if (distr == "t") {
+    if (length(quant) > 2) {
+      quant <- quant[(length(quant) - 1):length(quant)]
+      print("Warning: more than 2 quantile values are given. \nLargest 2  quantiles are used.")
+    }
+    if (length(quant) < 2) {
+      stop("At least 2 quantile value must be specified.")
+    }
+    fit <-
+      fitdistrplus::qmedist(lfl$DFL,
+                            distr,
+                            probs = quant,
+                            start = list(df = 2, ncp = mean(lfl$DFL)))
     est <- fit$estimate
     #add density line to the plot
-    hist <- hist + stat_function(fun = dt, args = list(df =est[1],  ncp = est[2]), colour=linecol)
+    hist <-
+      hist + stat_function(fun = dt,
+                           args = list(df = est[1],  ncp = est[2]),
+                           colour = linecol)
     #calculate p-values
-    pvals <- pt(q=lfl$DFL,  df =est[1],  ncp = est[2],  lower.tail = FALSE, log.p = FALSE)
+    pvals <-
+      pt(
+        q = lfl$DFL,
+        df = est[1],
+        ncp = est[2],
+        lower.tail = FALSE,
+        log.p = FALSE
+      )
   }
   #estimate using cauchy distribution
-  if(distr == "cauchy"){
-    if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
-    print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")}
-    if(length(quant) < 2){stop("At least 2 quantile value must be specified.")}
-    fit <- fitdistrplus::qmedist(lfl$DFL, distr, probs=quant)
+  if (distr == "cauchy") {
+    if (length(quant) > 2) {
+      quant <- quant[(length(quant) - 1):length(quant)]
+      print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")
+    }
+    if (length(quant) < 2) {
+      stop("At least 2 quantile value must be specified.")
+    }
+    fit <- fitdistrplus::qmedist(lfl$DFL, distr, probs = quant)
     est <- fit$estimate
     #add density line to the plot
-    hist <- hist + stat_function(fun = dcauchy, args = list(location = est[1],  scale= est[2]), colour=linecol)
+    hist <-
+      hist + stat_function(
+        fun = dcauchy,
+        args = list(location = est[1],  scale = est[2]),
+        colour = linecol
+      )
     #calculate p-values
-    pvals <- pcauchy(q=lfl$DFL,  location =est[1],  scale = est[2],  lower.tail = FALSE, log.p = FALSE)
+    pvals <-
+      pcauchy(
+        q = lfl$DFL,
+        location = est[1],
+        scale = est[2],
+        lower.tail = FALSE,
+        log.p = FALSE
+      )
   }
   #estimate using skew normal
-  if(distr == "sn"){
-    if(length(quant) > 3){quant <- quant[(length(quant) - 2):length(quant)]
-    print("Warning: more than 3 quantile values are given. \nLargest 3 quantiles are used.")}
-    if(length(quant) < 3){stop("At least 3 quantile values must be specified.")}
-    lp <- list(xi = mean(lfl$DFL), omega = sd(lfl$DFL), alpha = 1.5)
-    suppressWarnings(fit <- fitdistrplus::qmedist(lfl$DFL, distr, probs=quant, start=lp))
+  if (distr == "sn") {
+    if (length(quant) > 3) {
+      quant <- quant[(length(quant) - 2):length(quant)]
+      print("Warning: more than 3 quantile values are given. \nLargest 3 quantiles are used.")
+    }
+    if (length(quant) < 3) {
+      stop("At least 3 quantile values must be specified.")
+    }
+    lp <- list(xi = mean(lfl$DFL),
+               omega = sd(lfl$DFL),
+               alpha = 1.5)
+    suppressWarnings(fit <-
+                       fitdistrplus::qmedist(lfl$DFL, distr, probs = quant, start = lp))
     #fit <- fitdist(lfl$DFL, distr, method = "qme", probs=quant, start=lp)
     est <- fit$estimate
-    hist <- hist + stat_function(fun = dsn, args = list(xi = est[1], omega = est[2], alpha = est[3]), colour=linecol)
+    hist <-
+      hist + stat_function(
+        fun = dsn,
+        args = list(
+          xi = est[1],
+          omega = est[2],
+          alpha = est[3]
+        ),
+        colour = linecol
+      )
     #calculate p-values
-    pvals <- 1- psn(x=lfl$DFL, xi = est[1], omega = est[2], alpha = est[3])
+    pvals <-
+      1 - psn(
+        x = lfl$DFL,
+        xi = est[1],
+        omega = est[2],
+        alpha = est[3]
+      )
   }
 
   #select taxa that are kept in the data set at significance level alpha
   names(pvals) <- names(DFL$DFL)
 
   #smooth p-values
-  pvals_avg <- zoo::rollmean(pvals, k=lag, align=direction,  fill=NA )
+  if (rollmean){
+  pvals_avg <-
+    zoo::rollmean(pvals,
+                  k = 3,
+                  align = direction,
+                  fill = NA)
+  } else {
+    pvals_avg <- pvals
+  }
   #replace na's with original values
   pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
 
-  Ind <- which(pvals_avg <=alpha)
-  if (length(Ind !=0)) {Ind <- min(Ind)}
-  else{Ind <- dim(X)[2]-1
-  warning("no taxa are significant at a specified alpha level")}
+  Ind <- which(pvals_avg <= alpha)
+  if (length(Ind != 0)) {
+    Ind <- min(Ind)
+  }
+  else{
+    Ind <- dim(X)[2] - 1
+    warning("no taxa are significant at a specified alpha level")
+  }
   #if jth DFL is significant, then throw away all taxa 1:j
-  filtX <- X.orig[,-seq_len(Ind)]
+  filtX <- X.orig[, -seq_len(Ind)]
 
-  return(list(filtX = filtX, info = info, pvals = round(pvals_avg,5), DFL = DFL$DFL, fit=fit, hist = hist, est = est,
-              pDFL = DFL$p + ylab("Difference in Filtering Loss")))
+  return(
+    list(
+      filtX = filtX,
+      info = info,
+      pvals = round(pvals_avg, 5),
+      DFL = DFL$DFL,
+      fit = fit,
+      hist = hist,
+      est = est,
+      pDFL = DFL$p + ylab("Difference in Filtering Loss")
+    )
+  )
 }
-

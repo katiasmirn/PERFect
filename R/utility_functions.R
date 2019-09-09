@@ -175,7 +175,7 @@ pvals_Order <- function(Counts, res_sim){
 #' @param Counts OTU COUNTS table, where taxa are columns and samples are rows of the table.
 #' It should be a in data frame format with columns corresponding to taxa names.
 #'
-#' @return NC Taxa names in increasing  order of the number of connected taxa
+#' @return NC Taxa names in increasing  order of the number of connected taxa.
 #'
 #' @references Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
 #'

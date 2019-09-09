@@ -11,7 +11,7 @@ NC_Order(Counts)
 It should be a in data frame format with columns corresponding to taxa names.}
 }
 \value{
-NC Taxa names in increasing  order of the number of connected taxa
+NC Taxa names in increasing  order of the number of connected taxa.
 }
 \description{
 Taxa importance ordering by the number of connected taxa

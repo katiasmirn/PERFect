@@ -13,7 +13,13 @@
 #' 90\% percentiles of the individual filtering loss values.
 #' @param alpha Alpha level of the test, set to 0.1 by default.
 #'
-#' @return p_vals Plot of p-values
+#' @return
+#'
+#' A list is returned containing:
+#'
+#' \item{df}{Dataframe of taxa names, p-values, Flu values and quantiles.}
+#'
+#' \item{p_vals}{Plot of p-values.}
 #'
 #' @author Ekaterina Smirnova
 #'

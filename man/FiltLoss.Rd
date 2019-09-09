@@ -26,8 +26,8 @@ User can also specify their preference order with Order.user.}
 \item{Plot}{Binary TRUE/FALSE value. If TRUE, the function returns plot of sequential differences in filtering loss.}
 }
 \value{
-\item{FL}{Filtering loss values}
-\item{p_FL}{Plot of filtering loss values}
+\item{FL}{Filtering loss values.}
+\item{p_FL}{Plot of filtering loss values.}
 }
 \description{
 Sequential filtering loss calculation for removing a set of J_j taxa for J= 1, ..., p.

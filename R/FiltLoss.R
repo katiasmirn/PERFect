@@ -43,8 +43,8 @@
 #' The cumulative filtering loss is calculated sequentially for each set of taxa J_j, j=1, ..., p.
 #'
 #' @return
-#' \item{FL}{Filtering loss values}
-#' \item{p_FL}{Plot of filtering loss values}
+#' \item{FL}{Filtering loss values.}
+#' \item{p_FL}{Plot of filtering loss values.}
 #'
 #' @references Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data", to be submitted.
 #'

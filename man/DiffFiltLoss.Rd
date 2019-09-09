@@ -17,8 +17,8 @@ with columns corresponding to taxa names.}
 \item{Taxa_Names}{Optional taxa labels corresponding to the columns ordering given by Order_Ind.}
 }
 \value{
-\item{DFL}{Differences in filtering loss values}
-\item{p_FL}{Plot of the differences in filtering loss}
+\item{DFL}{Differences in filtering loss values.}
+\item{p_FL}{Plot of the differences in filtering loss.}
 }
 \description{
 This function calculates differences in filtering loss due to removing a set of J taxa sequentially.

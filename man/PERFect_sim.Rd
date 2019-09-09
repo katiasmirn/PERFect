@@ -6,7 +6,7 @@
 \usage{
 PERFect_sim(X,infocol = NULL, Order = "NP", Order.user = NULL, normalize = "counts",
          center = FALSE, quant = c(0.1, 0.25, 0.5), distr = "sn",
-         alpha = 0.1, lag = 3, direction = "left", pvals_sim = NULL,
+         alpha = 0.1, rollmean = TRUE, direction = "left", pvals_sim = NULL,
          nbins = 30, col = "red", fill = "green", hist_fill = 0.2,
          linecol = "blue")
 }
@@ -48,7 +48,8 @@ and set as the default distribution, other choices are available.
 
 \item{alpha}{Test level alpha, set to 0.1 by default.}
 
-\item{lag}{Integer width of the rolling window in rolling average (moving mean), set to 3 by default.}
+\item{rollmean}{Binary TRUE/FALSE value. If TRUE, rolling average (moving mean) of p-values will be calculated,
+with the lag window set to 3 by default.}
 
 \item{direction}{Character specifying whether the index of the result should be left- or right-aligned
 or centered compared to the rolling window of observations, set to "left" by default.}
@@ -68,19 +69,21 @@ Be aware that the choice of distribution for both methods must be the same.}
 \item{linecol}{Graphical parameter for the color of the fitted distribution density, set to "blue" by default.}
 }
 \value{
-\item{filtX}{Filtered OTU table}
+A list is returned containing:
 
-\item{pvals}{P-values of the test}
+\item{filtX}{Filtered OTU table.}
 
-\item{DFL}{Differences in filtering loss values}
+\item{pvals}{P-values of the test.}
 
-\item{fit}{Fitted values and further goodness of fit details passed from the \code{fitdistr()} function}
+\item{DFL}{Differences in filtering loss values.}
 
-\item{hist}{Histogram of log differences in filtering loss}
+\item{fit}{Fitted values and further goodness of fit details passed from the \code{fitdistr()} function.}
 
-\item{est}{Estimated distribution parameters}
+\item{hist}{Histogram of log differences in filtering loss.}
 
-\item{pDFL}{Plot of differences in filtering loss values}
+\item{est}{Estimated distribution parameters.}
+
+\item{pDFL}{Plot of differences in filtering loss values.}
 }
 \description{
 Simultaneous filtering of the provided OTU table X at a test level alpha. One distribution is fit to taxa simultaneously.

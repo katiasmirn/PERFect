@@ -10,7 +10,7 @@
 #'
 #' @usage PERFect_perm(X, infocol = NULL, Order = "NP", Order.user = NULL, normalize = "counts",
 #'     algorithm = "fast", center = FALSE, quant = c(0.1, 0.25, 0.5),
-#'     distr = "sn", alpha = 0.1, lag = 3, direction = "left", pvals_sim = NULL,
+#'     distr = "sn", alpha = 0.1, rollmean = TRUE, direction = "left", pvals_sim = NULL,
 #'     k = 10000, nbins = 30, hist = TRUE, col = "red", fill = "green",
 #'     hist_fill = 0.2, linecol = "blue")
 #'
@@ -51,7 +51,8 @@
 #' }
 #' @param alpha Test level alpha, set to 0.1 by default.
 #'
-#' @param lag Integer width of the rolling window in rolling average (moving mean), set to 3 by default.
+#' @param rollmean Binary TRUE/FALSE value. If TRUE, rolling average (moving mean) of p-values will be calculated,
+#'  with the lag window set to 3 by default.
 #'
 #' @param direction Character specifying whether the index of the result should be left- or right-aligned
 #'  or centered compared to the rolling window of observations, set to "left" by default.
@@ -84,19 +85,23 @@
 #'
 #' @return
 #'
-#' \item{filtX}{Filtered OTU table}
+#' If \code{"algorithm = full"} is chosen, a list is returned containing:
 #'
-#' \item{pvals}{P-values of the test}
+#' \item{filtX}{Filtered OTU table.}
 #'
-#' \item{DFL}{Differences in filtering loss values}
+#' \item{pvals}{P-values of the test.}
 #'
-#' \item{fit}{Fitted values and further goodness of fit details passed from the \code{fitdistr()} function}
+#' \item{DFL}{Differences in filtering loss values.}
 #'
-#' \item{hist}{Histogram of log differences in filtering loss}
+#' \item{fit}{Fitted values and further goodness of fit details passed from the \code{fitdistr()} function.}
 #'
-#' \item{est}{Estimated distribution parameters}
+#' \item{hist}{Histogram of log differences in filtering loss.}
 #'
-#' \item{dfl_distr}{Plot of differences in filtering loss values}
+#' \item{est}{Estimated distribution parameters.}
+#'
+#' \item{dfl_distr}{Plot of differences in filtering loss values.}
+#'
+#' If \code{"algorithm = fast"} is chosen, \code{fit}, \code{hist}, \code{est}, \code{dfl_distr} will not be returned.
 #'
 #' @references Azzalini, A. (2005). The skew-normal distribution and related multivariate families. Scandinavian Journal of Statistics, 32(2), 159-188.
 #'
@@ -133,60 +138,72 @@
 PERFect_perm <- function(X, infocol = NULL, Order = "NP",   Order.user = NULL,
                          normalize = "counts", algorithm = "fast", center = FALSE,
                          quant = c(0.10, 0.25, 0.5),  distr ="sn",
-                         alpha = 0.10, lag = 3, direction ="left",
+                         alpha = 0.10, rollmean = TRUE, direction ="left",
                          pvals_sim = NULL, k=10000, nbins =30, hist = TRUE,
                          col = "red", fill = "green", hist_fill = 0.2, linecol = "blue"){
 
   info <- NULL
   #infocol = index vector of other info
-  if(!is.null(infocol)){
-    info <- X[,infocol]
-    X <- X[,-infocol]
+  if (!is.null(infocol)) {
+    info <- X[, infocol]
+    X <- X[, -infocol]
   }
 
   # Check the format of X
-  if(!(class(X) %in% c("matrix"))){X <- as.matrix(X)}
+  if (!(class(X) %in% c("matrix"))) {
+    X <- as.matrix(X)
+  }
   #   stop('X must be a data frame or a matrix')
   # if(!(class(X) == "matrix")){X <- as.matrix(X)}
 
   # Check the format of Order
-  if(!(Order %in% c("NP","pvals","NC","NCw")))
+  if (!(Order %in% c("NP", "pvals", "NC", "NCw")))
     stop('Order argument can only be "NP", "pvals", "NC", or "NCw" ')
 
   # Check the format of normalize
-  if(!(normalize %in% c("counts","prop","pres")))
+  if (!(normalize %in% c("counts", "prop", "pres")))
     stop('normalize argument can only be "counts", "prop", or "pres" ')
 
   # Check the format of center
-  if(class(center) != "logical")
+  if (class(center) != "logical")
     stop('center argument must be a logical value')
 
   # Check the format of quant
-  if(!is.vector(quant)) stop('quant argument must be a vector')
+  if (!is.vector(quant))
+    stop('quant argument must be a vector')
 
   # Check the format of distr
-  if(!(distr %in% c("sn","norm","t","cauchy")))
+  if (!(distr %in% c("sn", "norm", "t", "cauchy")))
     stop('normalize argument can only be "sn", "norm", "t", or "cauchy" ')
 
   # Check the format of alpha
-  if(!is.numeric(alpha)) stop('alpha argument must be a numerical value')
+  if (!is.numeric(alpha))
+    stop('alpha argument must be a numerical value')
 
   # Check if pvals_sim object is input correctly
-  if(class(pvals_sim) != "NULL" & length(pvals_sim$pvals) == 0)
+  if (class(pvals_sim) != "NULL" & length(pvals_sim$pvals) == 0)
     stop('pvals_sim object must be a result from simultaneous PERFect with taxa abundance ordering')
 
   #Order columns by importance
-  if(is.null(Order.user)){
-    if(Order == "NP") {Order.vec <- NP_Order(X)}
-    if(Order == "pvals") {Order.vec <- pvals_Order(X, pvals_sim)}
-    if(Order == "NC"){Order.vec <- NC_Order(X)}
-    if(Order == "NCw"){Order.vec <- NCw_Order(X)}
+  if (is.null(Order.user)) {
+    if (Order == "NP") {
+      Order.vec <- NP_Order(X)
+    }
+    if (Order == "pvals") {
+      Order.vec <- pvals_Order(X, pvals_sim)
+    }
+    if (Order == "NC") {
+      Order.vec <- NC_Order(X)
+    }
+    if (Order == "NCw") {
+      Order.vec <- NCw_Order(X)
+    }
   } else {
     Order.vec <- Order.user #user-specified ordering of columns of X
   }
 
   #properly order columns of X
-  X <- X[,Order.vec]
+  X <- X[, Order.vec]
 
   #remove all-zero OTU columns
   nzero.otu <- apply(X, 2, Matrix::nnzero) != 0
@@ -198,46 +215,65 @@ PERFect_perm <- function(X, infocol = NULL, Order = "NP",   Order.user = NULL,
   X.orig <- X
 
   #normalize the data
-  if(normalize == "prop"){X <- X/apply(X, 1, sum)}
-  else if (normalize == "pres"){X[X!=0]<-1}
+  if (normalize == "prop") {
+    X <- X / apply(X, 1, sum)
+  }
+  else if (normalize == "pres") {
+    X[X != 0] <- 1
+  }
 
   #center if true
-  if(center){X <- apply(X, 2, function(x) {x-mean(x)})}
+  if (center) {
+    X <- apply(X, 2, function(x) {
+      x - mean(x)
+    })
+  }
 
-  if(algorithm == "fast"){
-
+  if (algorithm == "fast") {
     #index for iteration
-    n <- sum_n(dim(X)[2])$idx-1
+    n <- sum_n(dim(X)[2])$idx - 1
 
     #initiate a vector to store p-values
-    pvals <- rep(NA,p-1)
+    pvals <- rep(NA, p - 1)
 
     #calculate DFL values and FL values
-    Order_Ind <- rep(seq_len(length(Order.vec))) #convert to numeric indicator values
-    DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec)
-    FL <- FiltLoss(X = X, Order.user = Order.vec, type =  "Ind", Plot = TRUE)$FL
+    Order_Ind <-
+      rep(seq_len(length(Order.vec))) #convert to numeric indicator values
+    DFL <-
+      DiffFiltLoss(X = X,
+                   Order_Ind,
+                   Plot = TRUE,
+                   Taxa_Names = Order.vec)
+    FL <-
+      FiltLoss(
+        X = X,
+        Order.user = Order.vec,
+        type =  "Ind",
+        Plot = TRUE
+      )$FL
 
     #name p-values
     names(pvals) <- names(DFL$DFL)
 
     #For each taxon j, create a distribution of its DFL's by permuting the labels
-    dfl_distr <- sampl_distr(X = X, k=k)
+    dfl_distr <- sampl_distr(X = X, k = k)
 
     #convert to log differences
-    lfl <- lapply(dfl_distr, function(x) log(x[!x==0]))
+    lfl <- lapply(dfl_distr, function(x)
+      log(x[!x == 0]))
 
     #initiate a vector for OTUs to be double checked
     check <- c()
 
     # Calculate the number of cores
-    no_cores <- parallel::detectCores()-1
+    no_cores <- parallel::detectCores() - 1
 
     # Initiate cluster, start parrallel processing
     cl <- parallel::makeCluster(no_cores)
 
-    if(distr == "norm"){
+    if (distr == "norm") {
       # load packages for each core in order to use function qmedist and sn distribution
-      parallel::clusterEvalQ(cl,{
+      parallel::clusterEvalQ(cl, {
         library(fitdistrplus)
       })
 
@@ -245,128 +281,190 @@ PERFect_perm <- function(X, infocol = NULL, Order = "NP",   Order.user = NULL,
       lfl_main <- lfl[n]
 
       #check quantile for normal distribution fit
-      if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
-      print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")}
-      if(length(quant) < 2){stop("At least two quantile values must be specified.")}
+      if (length(quant) > 2) {
+        quant <- quant[(length(quant) - 1):length(quant)]
+        print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")
+      }
+      if (length(quant) < 2) {
+        stop("At least two quantile values must be specified.")
+      }
 
       #load variables for each core
-      parallel::clusterExport(cl,c("distr","quant"),envir=environment())
+      parallel::clusterExport(cl, c("distr", "quant"), envir = environment())
 
       #find the first significant OTU among OTU of index n
       #fit <- parallel::parLapply(cl, lfl_main, function(x) fitdist(x, distr, method="qme", probs=quant))
-      fit <- parallel::parLapply(cl, lfl_main, function(x) fitdistrplus::qmedist(x, distr, probs=quant))
-      est <- lapply(fit, function(x) x$estimate)
-      for(i in seq_len(length(n))){
-        pvals[n[i]] <- pnorm(q=log(DFL$DFL[n[i]]),mean = est[[i]][1], sd = est[[i]][2],
-                             lower.tail = FALSE, log.p = FALSE)
+      fit <-
+        parallel::parLapply(cl, lfl_main, function(x)
+          fitdistrplus::qmedist(x, distr, probs = quant))
+      est <- lapply(fit, function(x)
+        x$estimate)
+      for (i in seq_len(length(n))) {
+        pvals[n[i]] <-
+          pnorm(
+            q = log(DFL$DFL[n[i]]),
+            mean = est[[i]][1],
+            sd = est[[i]][2],
+            lower.tail = FALSE,
+            log.p = FALSE
+          )
         #calculate a few p-values before that first significant OTU
-        if(pvals[n[i]] < alpha){
-          stop_idx <- n[i-1]
-          temp <- c((n[i-1]+1):(n[i]-1),n[i]+1, n[i]+2)
+        if (pvals[n[i]] < alpha) {
+          stop_idx <- n[i - 1]
+          temp <- c((n[i - 1] + 1):(n[i] - 1), n[i] + 1, n[i] + 2)
           lfl_temp <- lfl[temp]
           #fit <- parallel::parLapply(cl,lfl_temp, function(x) fitdist(x, distr, method = "qme", probs=quant))
-          fit <- parallel::parLapply(cl,lfl_temp, function(x) fitdistrplus::qmedist(x, distr, probs=quant))
-          est <- lapply(fit, function(x) x$estimate)
-          for(j in seq_len(length(temp))){
-            pvals[temp[j]] <- pnorm(q=log(DFL$DFL[temp[j]]), mean = est[[j]][1], sd = est[[j]][2],
-                                    lower.tail = FALSE, log.p = FALSE)
+          fit <-
+            parallel::parLapply(cl, lfl_temp, function(x)
+              fitdistrplus::qmedist(x, distr, probs = quant))
+          est <- lapply(fit, function(x)
+            x$estimate)
+          for (j in seq_len(length(temp))) {
+            pvals[temp[j]] <-
+              pnorm(
+                q = log(DFL$DFL[temp[j]]),
+                mean = est[[j]][1],
+                sd = est[[j]][2],
+                lower.tail = FALSE,
+                log.p = FALSE
+              )
             #if(pvals[temp[j]] < 0.1) {break}
           }
-          break}
+          break
+        }
       }
       # find the potential cut off index
       potential <- which(pvals == min(pvals, na.rm = TRUE))
 
       # check the 10% most recent interval for unsual DFL values
-      for(i in round((match(stop_idx,n)*9/10)):match(stop_idx,n)){
-        check <- c(check, names(which(DFL$DFL[n[i]:n[(i+1)]] > max(DFL$DFL[n[i+1]],DFL$DFL[n[i]]) &
-                                        FL[n[i]:n[(i+1)]] > max(FL[n[i+1]],FL[n[i]])
-        )
-        )
-        )
+      for (i in round((match(stop_idx, n) * 9 / 10)):match(stop_idx, n)) {
+        check <-
+          c(check, names(which(
+            DFL$DFL[n[i]:n[(i + 1)]] > max(DFL$DFL[n[i + 1]], DFL$DFL[n[i]]) &
+              FL[n[i]:n[(i + 1)]] > max(FL[n[i +
+                                               1]], FL[n[i]])
+          )))
       }
       #Identify OTU with DFL higher than the potential cut off taxon
-      check <- c(check, names(which(DFL$DFL[seq_len(potential-1)] > DFL$DFL[potential] &
-                                      FL[seq_len(potential-1)] > FL[potential])))
+      check <-
+        c(check, names(which(DFL$DFL[seq_len(potential - 1)] > DFL$DFL[potential] &
+                               FL[seq_len(potential - 1)] > FL[potential])))
 
-      if (length(check) !=0){
-        check_idx <- which(names(pvals)%in% check)
+      if (length(check) != 0) {
+        check_idx <- which(names(pvals) %in% check)
         # Calculate their pvalues
         lfl_check <- lfl[check_idx]
         #fit <- parallel::parLapply(cl,lfl_check, function(x) fitdist(x, distr,method = "qme", probs=quant))
-        fit <- parallel::parLapply(cl,lfl_check, function(x) fitdistrplus::qmedist(x, distr, probs=quant))
-        est <- lapply(fit, function(x) x$estimate)
-        for(j in seq_len(check_idx)){
-          pvals[check_idx[j]] <- pnorm(q=log(DFL$DFL[check_idx[j]]),mean = est[[j]][1], sd = est[[j]][2],
-                                       lower.tail = FALSE, log.p = FALSE)
+        fit <-
+          parallel::parLapply(cl, lfl_check, function(x)
+            fitdistrplus::qmedist(x, distr, probs = quant))
+        est <- lapply(fit, function(x)
+          x$estimate)
+        for (j in seq_len(check_idx)) {
+          pvals[check_idx[j]] <-
+            pnorm(
+              q = log(DFL$DFL[check_idx[j]]),
+              mean = est[[j]][1],
+              sd = est[[j]][2],
+              lower.tail = FALSE,
+              log.p = FALSE
+            )
         }
       }
     }
 
     #fit the distribution
-    if(distr == "sn"){
-
+    if (distr == "sn") {
       # load packages for each core in order to use function qmedist and sn distribution
-      parallel::clusterEvalQ(cl,{
+      parallel::clusterEvalQ(cl, {
         library(fitdistrplus)
         library(sn)
       })
 
       # starting values to fit the skew normal distribution
-      lp <- list(xi = mean(lfl[[1]]), omega = sd(lfl[[1]]), alpha = 1.5)
+      lp <-
+        list(xi = mean(lfl[[1]]),
+             omega = sd(lfl[[1]]),
+             alpha = 1.5)
 
       #get the sampled values from OTU of index n
       lfl_main <- lfl[n]
 
       #load variables for each core
-      parallel::clusterExport(cl,c("distr","quant","lp"),envir=environment())
+      parallel::clusterExport(cl, c("distr", "quant", "lp"), envir = environment())
 
       #find the first significant OTU among OTU of index n
       #fit <- parallel::parLapply(cl, lfl_main, function(x) fitdist(x, distr,method = "qme", probs=quant, start=lp))
-      suppressWarnings(fit <- parallel::parLapply(cl, lfl_main, function(x) fitdistrplus::qmedist(x, distr, probs=quant, start=lp)))
-      est <- lapply(fit, function(x) x$estimate)
-      for(i in seq_len(length(n))){
-        pvals[n[i]] <- 1 - psn(x=log(DFL$DFL[n[i]]),xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3])
+      suppressWarnings(fit <-
+                         parallel::parLapply(cl, lfl_main, function(x)
+                           fitdistrplus::qmedist(x, distr, probs = quant, start = lp)))
+      est <- lapply(fit, function(x)
+        x$estimate)
+      for (i in seq_len(length(n))) {
+        pvals[n[i]] <-
+          1 - psn(
+            x = log(DFL$DFL[n[i]]),
+            xi = est[[i]][1],
+            omega = est[[i]][2],
+            alpha = est[[i]][3]
+          )
         #calculate a few p-values before that first significant OTU
-        if(pvals[n[i]] < alpha){
-          stop_idx <- n[i-1]
-          temp <- c((n[i-1]+1):(n[i]-1),n[i]+1, n[i]+2)
+        if (pvals[n[i]] < alpha) {
+          stop_idx <- n[i - 1]
+          temp <- c((n[i - 1] + 1):(n[i] - 1), n[i] + 1, n[i] + 2)
           lfl_temp <- lfl[temp]
           #fit <- parallel::parLapply(cl,lfl_temp, function(x) fitdist(x, distr, method = "qme", probs=quant, start=lp))
-          suppressWarnings(fit <- parallel::parLapply(cl,lfl_temp, function(x) fitdistrplus::qmedist(x, distr, probs=quant, start=lp)))
-          est <- lapply(fit, function(x) x$estimate)
-          for(j in seq_len(length(temp))){
-            pvals[temp[j]] <- 1 - psn(x=log(DFL$DFL[temp[j]]), xi = est[[j]][1], omega = est[[j]][2], alpha = est[[j]][3])
+          suppressWarnings(fit <-
+                             parallel::parLapply(cl, lfl_temp, function(x)
+                               fitdistrplus::qmedist(x, distr, probs = quant, start = lp)))
+          est <- lapply(fit, function(x)
+            x$estimate)
+          for (j in seq_len(length(temp))) {
+            pvals[temp[j]] <-
+              1 - psn(
+                x = log(DFL$DFL[temp[j]]),
+                xi = est[[j]][1],
+                omega = est[[j]][2],
+                alpha = est[[j]][3]
+              )
             #if(pvals[temp[j]] < alpha) {break}
           }
-          break}
+          break
+        }
       }
       # find the potential cut off index
       potential <- which(pvals == min(pvals, na.rm = TRUE))
 
       # check the 10% most recent interval for unsual DFL values
-      for(i in round((match(stop_idx,n)*9/10)):match(stop_idx,n)){
-        check <- c(check, names(which(DFL$DFL[n[i]:n[(i+1)]] > max(DFL$DFL[n[i+1]],DFL$DFL[n[i]]) &
-                                        FL[n[i]:n[(i+1)]] > max(FL[n[i+1]],FL[n[i]])
-        )
-        )
-        )
+      for (i in round((match(stop_idx, n) * 9 / 10)):match(stop_idx, n)) {
+        check <-
+          c(check, names(which(
+            DFL$DFL[n[i]:n[(i + 1)]] > max(DFL$DFL[n[i + 1]], DFL$DFL[n[i]]) &
+              FL[n[i]:n[(i + 1)]] > max(FL[n[i +
+                                               1]], FL[n[i]])
+          )))
       }
       #Identify OTU with DFL higher than the potential cut off taxon
-      check <- c(check, names(which(DFL$DFL[seq_len(potential-1)] > DFL$DFL[potential] &
-                                      FL[seq_len(potential-1)] > FL[potential])
-      )
-      )
-      if (length(check) != 0){
-        check_idx <- which(names(pvals)%in% check)
+      check <-
+        c(check, names(which(DFL$DFL[seq_len(potential - 1)] > DFL$DFL[potential] &
+                               FL[seq_len(potential - 1)] > FL[potential])))
+      if (length(check) != 0) {
+        check_idx <- which(names(pvals) %in% check)
         # Calculate their pvalues
         lfl_check <- lfl[check_idx]
         #fit <- parallel::parLapply(cl,lfl_check, function(x) fitdist(x, distr, method = "qme", probs=quant, start=lp))
-        suppressWarnings(fit <- parallel::parLapply(cl,lfl_check, function(x) fitdistrplus::qmedist(x, distr, probs=quant, start=lp)))
-        est <- lapply(fit, function(x) x$estimate)
-        for(j in seq_len(length(check_idx))){
-          pvals[check_idx[j]] <- 1 - psn(x=log(DFL$DFL[check_idx[j]]),
-                                         xi = est[[j]][1], omega = est[[j]][2], alpha = est[[j]][3])
+        suppressWarnings(fit <-
+                           parallel::parLapply(cl, lfl_check, function(x)
+                             fitdistrplus::qmedist(x, distr, probs = quant, start = lp)))
+        est <- lapply(fit, function(x)
+          x$estimate)
+        for (j in seq_len(length(check_idx))) {
+          pvals[check_idx[j]] <- 1 - psn(
+            x = log(DFL$DFL[check_idx[j]]),
+            xi = est[[j]][1],
+            omega = est[[j]][2],
+            alpha = est[[j]][3]
+          )
         }
       }
     }
@@ -374,119 +472,234 @@ PERFect_perm <- function(X, infocol = NULL, Order = "NP",   Order.user = NULL,
     # End the parallel processing
     parallel::stopCluster(cl)
 
-    #smooth p-values
-    non_na_ind <- which(!is.na(pvals))
-    pvals_avg <- pvals
-    pvals_avg[non_na_ind] <- zoo::rollapply(pvals[non_na_ind], width =lag, mean, align=direction, fill=NA, na.rm = TRUE)
-    #replace na's with original values
-    pvals_avg[non_na_ind][is.na(pvals_avg[non_na_ind])] <- pvals[non_na_ind][is.na(pvals_avg[non_na_ind])]
-    names(pvals_avg) <- names(pvals)[(length(pvals)-length(pvals_avg)+1):length(pvals)]
-
+    if (rollmean) {
+      #smooth p-values
+      non_na_ind <- which(!is.na(pvals))
+      pvals_avg <- pvals
+      pvals_avg[non_na_ind] <-
+        zoo::rollapply(
+          pvals[non_na_ind],
+          width = 3,
+          mean,
+          align = direction,
+          fill = NA,
+          na.rm = TRUE
+        )
+      #replace na's with original values
+      pvals_avg[non_na_ind][is.na(pvals_avg[non_na_ind])] <-
+        pvals[non_na_ind][is.na(pvals_avg[non_na_ind])]
+      names(pvals_avg) <-
+        names(pvals)[(length(pvals) - length(pvals_avg) + 1):length(pvals)]
+    } else {
+      pvals_avg <- pvals
+    }
     #select the first significant taxon
-    Ind = which(pvals_avg <=alpha & pvals_avg > 0)[1]
-
-    if (length(Ind !=0)) {Ind <- min(Ind)}
-    else{Ind <- dim(X)[2]-1
-    warning("no taxa are significant at a specified alpha level")}
+    Ind <- which(pvals_avg <= alpha & pvals_avg > 0)
+    if (length(Ind) == 0) {
+      Ind <- which(pvals <= alpha & pvals > 0)
+      warning(
+        "Rolling average greatly modifies this result. Try one of these suggestions: \n
+              1. Increase the number of permutations \n
+              2. Set rollingmean to FALSE "
+      )
+    }
+    if (length(Ind != 0)) {
+      Ind <- min(Ind)
+    }
+    else{
+      Ind <- dim(X)[2] - 1
+      warning("No taxa are significant at a specified alpha level.")
+    }
 
     #if jth DFL is significant, then throw away all taxa 1:j
-    filtX <- X.orig[,-seq_len(Ind)]
+    filtX <- X.orig[, -seq_len(Ind)]
 
-    return(list(filtX = filtX, info = info, pvals = pvals_avg))
-  }  else if(algorithm == "full"){
-    pvals <- rep(0,p-1)
-    hist_list <- lapply(seq_len(p-1),function(x) NULL)
+    return(list(
+      filtX = filtX,
+      info = info,
+      fit = NULL,
+      hist = NULL,
+      est = NULL,
+      dfl_distr = NULL,
+      pvals = pvals_avg
+    ))
+
+  }  else if (algorithm == "full") {
+    pvals <- rep(0, p - 1)
+    hist_list <- lapply(seq_len(p - 1), function(x)
+      NULL)
 
     #calculate DFL values
-    Order_Ind <- rep(seq_len(length(Order.vec))) #convert to numeric indicator values
-    DFL <- DiffFiltLoss(X = X, Order_Ind, Plot = TRUE, Taxa_Names = Order.vec)
+    Order_Ind <-
+      rep(seq_len(length(Order.vec))) #convert to numeric indicator values
+    DFL <-
+      DiffFiltLoss(X = X,
+                   Order_Ind,
+                   Plot = TRUE,
+                   Taxa_Names = Order.vec)
 
     #name p-values
     names(pvals) <- names(DFL$DFL)
 
     #For each taxon j, create a distribution of its DFL's by permuting the labels
-    dfl_distr <- sampl_distr(X = X, k=k)
+    dfl_distr <- sampl_distr(X = X, k = k)
 
     #convert to log differences
-    lfl <- lapply(dfl_distr, function(x) log(x[!x==0]))
+    lfl <- lapply(dfl_distr, function(x)
+      log(x[!x == 0]))
 
     #fit the distribution
-    if(distr == "norm"){
-      if(length(quant) > 2){quant <- quant[(length(quant) - 1):length(quant)]
-      print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")}
-      if(length(quant) < 2){stop("At least two quantile values must be specified.")}
+    if (distr == "norm") {
+      if (length(quant) > 2) {
+        quant <- quant[(length(quant) - 1):length(quant)]
+        print("Warning: more than 2 quantile values are given. \nLargest 2 quantiles are used.")
+      }
+      if (length(quant) < 2) {
+        stop("At least two quantile values must be specified.")
+      }
       #fit <- lapply(lfl, function(x) fitdist(x, distr, method = "qme", probs=quant))
-      fit <- lapply(lfl, function(x) fitdistrplus::qmedist(x, distr, probs=quant))
-      est <- lapply(fit, function(x) x$estimate)
-      for(i in seq_len(p-1)){
-        pvals[i] <- pnorm(q=log(DFL$DFL[i]), mean = est[[i]][1], sd = est[[i]][2],
-                          lower.tail = FALSE, log.p = FALSE)}
+      fit <-
+        lapply(lfl, function(x)
+          fitdistrplus::qmedist(x, distr, probs = quant))
+      est <- lapply(fit, function(x)
+        x$estimate)
+      for (i in seq_len(p - 1)) {
+        pvals[i] <-
+          pnorm(
+            q = log(DFL$DFL[i]),
+            mean = est[[i]][1],
+            sd = est[[i]][2],
+            lower.tail = FALSE,
+            log.p = FALSE
+          )
+      }
     }
 
-    if(distr == "sn"){
+    if (distr == "sn") {
       #lp <- lapply(lfl, function(x) list(xi = mean(x), omega = sd(x), alpha = 1.5))
-      lp <- list(xi = mean(lfl[[1]]), omega = sd(lfl[[1]]), alpha = 1.5)
+      lp <-
+        list(xi = mean(lfl[[1]]),
+             omega = sd(lfl[[1]]),
+             alpha = 1.5)
       #fit <- lapply(lfl, function(x) fitdist(x, distr, method = "qme", probs=quant, start=lp))
-      suppressWarnings(fit <- lapply(lfl, function(x) fitdistrplus::qmedist(x, distr, probs=quant, start=lp)))
-      est <- lapply(fit, function(x) x$estimate)
-      for(i in seq_len(p-1)){
-        pvals[i] <- 1 - psn(x=log(DFL$DFL[i]),
-                            xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3])}
+      suppressWarnings(fit <-
+                         lapply(lfl, function(x)
+                           fitdistrplus::qmedist(x, distr, probs = quant, start = lp)))
+      est <- lapply(fit, function(x)
+        x$estimate)
+      for (i in seq_len(p - 1)) {
+        pvals[i] <- 1 - psn(
+          x = log(DFL$DFL[i]),
+          xi = est[[i]][1],
+          omega = est[[i]][2],
+          alpha = est[[i]][3]
+        )
+      }
     }
 
-    if(hist == TRUE){
-      lfl <- lapply(lfl, function(x) data.frame(x))
+    if (hist == TRUE) {
+      lfl <- lapply(lfl, function(x)
+        data.frame(x))
       #build histograms for each taxon j
-      for(i in seq_len(p-1)) {
-
+      for (i in seq_len(p - 1)) {
         #add a histogram
-        lfl <- data.frame(log(dfl_distr[[i]][!dfl_distr[[i]]==0]))
-        if(length(dfl_distr[[i]][dfl_distr[[i]]==0])>0){
+        lfl <- data.frame(log(dfl_distr[[i]][!dfl_distr[[i]] == 0]))
+        if (length(dfl_distr[[i]][dfl_distr[[i]] == 0]) > 0) {
           print(paste("taxon", i, "number of zeroes = ",
-                      length(dfl_distr[[i]][dfl_distr[[i]]==0])))}
+                      length(dfl_distr[[i]][dfl_distr[[i]] == 0])))
+        }
         names(lfl) <- c("DFL")
         #plot histogram
         x <- "DFL"
         ord_map <- aes_string(x = x)
         #hist <- ggplot(lfl, ord_map) + geom_histogram()
-        hist <- ggplot(lfl, ord_map) + geom_histogram(bins = nbins, aes(y=..density..),
-                                                      col = col, fill = fill, alpha =hist_fill)+
-          theme(panel.background = element_rect(fill = "white"),
-                panel.grid.major = element_line(colour = "grey90"),
-                axis.text.x  = element_text( size=10))+
+        hist <-
+          ggplot(lfl, ord_map) + geom_histogram(
+            bins = nbins,
+            aes(y = ..density..),
+            col = col,
+            fill = fill,
+            alpha = hist_fill
+          ) +
+          theme(
+            panel.background = element_rect(fill = "white"),
+            panel.grid.major = element_line(colour = "grey90"),
+            axis.text.x  = element_text(size = 10)
+          ) +
           ggtitle("") + xlab("log differences in filtering loss") + ylab("Density")
 
         #estimate using normal
-        if(distr == "norm"){
+        if (distr == "norm") {
           #add density line to the plot
-          hist <- hist + stat_function(fun = dnorm,
-                                       args = list(mean = est[[i]][1], sd = est[[i]][2]), colour=linecol)
+          hist <- hist + stat_function(
+            fun = dnorm,
+            args = list(mean = est[[i]][1], sd = est[[i]][2]),
+            colour = linecol
+          )
           hist_list[[i]] <- hist
         }
 
         #estimate using skew normal
-        if(distr == "sn"){
-          hist <- hist + stat_function(fun = dsn,
-                                       args = list(xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3]), colour=linecol)
+        if (distr == "sn") {
+          hist <- hist + stat_function(
+            fun = dsn,
+            args = list(
+              xi = est[[i]][1],
+              omega = est[[i]][2],
+              alpha = est[[i]][3]
+            ),
+            colour = linecol
+          )
           hist_list[[i]] <- hist
         }
       }
     }#end if hist == TRUE
-    #smooth p-values
-    pvals_avg <- zoo::rollapply(pvals, width =lag, mean, align=direction, fill=NA, na.rm = TRUE)
-    #replace na's with original values
-    pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
-    names(pvals_avg) <- names(pvals)
 
+    if (rollmean) {
+      #smooth p-values
+      pvals_avg <-
+        zoo::rollapply(
+          pvals,
+          width = 3,
+          mean,
+          align = direction,
+          fill = NA,
+          na.rm = TRUE
+        )
+      #replace na's with original values
+      pvals_avg[is.na(pvals_avg)] <- pvals[is.na(pvals_avg)]
+      names(pvals_avg) <- names(pvals)
+    } else {
+      pvals_avg <- pvals
+    }
     #select taxa that are kept in the data set at significance level alpha
-    Ind <- which(pvals_avg <=alpha)
-    if (length(Ind !=0)) {Ind <- min(Ind)}
-    else{Ind <- dim(X)[2]-1
-    warning("no taxa are significant at a specified alpha level")}
+    Ind <- which(pvals_avg <= alpha)
+
+    ## If rolling average fails and remove the significant taxon, use raw p-value
+    if (length(Ind) == 0) {
+      Ind <- which(pvals <= alpha & pvals > 0)
+    }
+
+    if (length(Ind != 0)) {
+      Ind <- min(Ind)
+    }
+    else{
+      Ind <- dim(X)[2] - 1
+      warning("no taxa are significant at a specified alpha level")
+    }
     #if jth DFL is significant, then throw away all taxa 1:j
-    filtX <- X.orig[,-seq_len(Ind)]
-    return(list(filtX = filtX,info = info, fit = fit, hist = hist_list,
-                est =est, dfl_distr=dfl_distr, pvals = pvals_avg ))
+    filtX <- X.orig[, -seq_len(Ind)]
+    return(
+      list(
+        filtX = filtX,
+        info = info,
+        fit = fit,
+        hist = hist_list,
+        est = est,
+        dfl_distr = dfl_distr,
+        pvals = pvals_avg
+      )
+    )
   }# end if(algorithm == "full")
 
 }

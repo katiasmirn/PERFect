@@ -5,7 +5,7 @@
 \title{Permutation PERFect filtering for microbiome data}
 \usage{
 PERFect_perm_reorder(X, Order = "NP", Order.user = NULL, res_perm, normalize = "counts",
-    center = FALSE, alpha = 0.1, distr = "sn", lag = 3, direction = "left",
+    center = FALSE, alpha = 0.1, distr = "sn", rollmean = TRUE, direction = "left",
     pvals_sim = NULL)
 }
 \arguments{
@@ -37,7 +37,8 @@ or convert it into a presence/absence table using \code{"pres"}.}
 \item{\code{"cauchy"}}{Cauchy distribution with 2 parameters: location and scale}
 }}
 
-\item{lag}{Integer width of the rolling window in rolling average (moving mean), set to 3 by default.}
+\item{rollmean}{Binary TRUE/FALSE value. If TRUE, rolling average (moving mean) of p-values will be calculated,
+with the lag window set to 3 by default.}
 
 \item{direction}{Character specifying whether the index of the result should be left- or right-aligned
 or centered compared to the rolling window of observations, set to "left" by default.}
@@ -48,7 +49,7 @@ Be aware that the choice of distribution for both methods must be the same.}
 }
 \value{
 \item{res_perm}{The perfect_perm object updated according to the alternative taxa ordering.
-All elements in this list are same as in perfect_perm object given by \code{PERFect()} function}
+All elements in this list are same as in perfect_perm object given by \code{PERFect()} function.}
 }
 \description{
 This function  filters  the provided OTU table X at a test level alpha given a fitted object

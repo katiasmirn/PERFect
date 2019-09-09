@@ -13,7 +13,7 @@ It should be a in data frame format with columns corresponding to taxa names.}
 \item{J}{A vector of J taxa to be removed. It must be subset of column names of X.}
 }
 \value{
-FL Filtering loss value
+FL Filtering loss value.
 }
 \description{
 This function calculates filtering loss due to removing a group of J taxa.

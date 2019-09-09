@@ -17,8 +17,8 @@
 #' for removing the first j taxa as DFL(j+1) = FL(J_{j+1}) - FL(J_j) for taxa j=1, ..., p.
 #'
 #' @return
-#' \item{DFL}{Differences in filtering loss values}
-#' \item{p_FL}{Plot of the differences in filtering loss}
+#' \item{DFL}{Differences in filtering loss values.}
+#' \item{p_FL}{Plot of the differences in filtering loss.}
 #'
 #' @references Smirnova, E., Huzurbazar, H., Jafari, F. ``PERFect: permutation  filtration of microbiome data', to be submitted.
 #'
@@ -73,11 +73,10 @@ DiffFiltLoss <- function(X, Order_Ind, Plot = TRUE, Taxa_Names = NULL) {
   for (j in seq_len(p - 1)) {
     DFL[j] <- DiffFiltLoss_j(Order_Ind, Netw, j)
   }
-  DFL <- DFL/sum(Netw * Netw)
+  DFL <- DFL / sum(Netw * Netw)
 
   if (Plot == TRUE)
   {
-
     # Plot Full Norm reduction
     df <- data.frame(Order_Ind[-1], rep(seq_len(length(DFL))), DFL)
     names(df)[2] <- "x"
@@ -85,12 +84,20 @@ DiffFiltLoss <- function(X, Order_Ind, Plot = TRUE, Taxa_Names = NULL) {
     df <- cbind(Lab, df)
 
     #Plots
-    p_FL <- ggplot(df) + geom_line(aes(x = Lab, y = DFL, group =1),
-                                   colour = "dodgerblue3")+
-      theme(panel.background = element_rect(fill = "white"),
-            panel.grid.major = element_line(colour = "grey90"),
-            axis.text.x  = element_text( size=10,colour="black", angle = 90, hjust = 1))+
-      ggtitle("") + ylab("Differences in Filtering Loss") + xlab("Taxa")+xlim(0, max(df$Lab))
+    p_FL <- ggplot(df) + geom_line(aes(x = Lab, y = DFL, group = 1),
+                                   colour = "dodgerblue3") +
+      theme(
+        panel.background = element_rect(fill = "white"),
+        panel.grid.major = element_line(colour = "grey90"),
+        axis.text.x  = element_text(
+          size = 10,
+          colour = "black",
+          angle = 90,
+          hjust = 1
+        )
+      ) +
+      ggtitle("") + ylab("Differences in Filtering Loss") + xlab("Taxa") +
+      xlim(0, max(df$Lab))
 
   }  #end if Plot = TRUE
 
@@ -98,9 +105,5 @@ DiffFiltLoss <- function(X, Order_Ind, Plot = TRUE, Taxa_Names = NULL) {
     names(DFL) <- Taxa_Names[-1]
   }
 
-
   return(list(DFL = DFL, p_FL = p_FL))
 }
-
-
-

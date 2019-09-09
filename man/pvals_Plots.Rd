@@ -18,7 +18,11 @@ It should be a in data frame format with columns corresponding to taxa names.}
 \item{alpha}{Alpha level of the test, set to 0.1 by default.}
 }
 \value{
-p_vals Plot of p-values
+A list is returned containing:
+
+\item{df}{Dataframe of taxa names, p-values, Flu values and quantiles.}
+
+\item{p_vals}{Plot of p-values.}
 }
 \description{
 Graphical representation of p-values obtained by running \code{PERFect_sim()} or
