@@ -314,6 +314,8 @@ $$
 The values of $DFL^*$ for other sets of taxa are calculated similarly. 
 
 ```{r}
+## Some internal functions
+
 ########################################
 #Function to calculate j^th DFL loss
 ########################################
@@ -339,6 +341,34 @@ Perm_j_s <- function(j, Netw, k,p, p2 = NULL){
   return(FL_j)
 }
 
+###################################################
+#Obtain sampling distribution using permutations of DFL
+###################################################
+sampl_distr <- function(X, k){
+  p <- dim(X)[2]
+  Netw <- t(X)%*%X
+  #full_norm <- psych::tr(t(Netw)%*%Netw)#this is full norm value
+  full_norm <- sum(Netw*Netw)
+  #For each taxon j, create a distribution of its DFL's by permuting the labels
+  res_all <- lapply(seq_len(p-1),function(x) x)
+
+  # Calculate the number of cores
+  no_cores <- parallel::detectCores()-1
+  # Initiate cluster, start parrallel processing
+  cl <- parallel::makeCluster(no_cores)
+  #load variables for each core
+  parallel::clusterExport(cl,c("DiffFiltLoss_j","Perm_j_s","Netw","k","p"),envir=environment())
+  #parallel apply
+  FL_j <- parallel::parLapply(cl, res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = x+1))
+  #FL_j <- lapply(res_all, function(x) Perm_j_s(j = x, Netw =Netw, k=k, p =p, p2 = x+1))
+  # End the parallel processing
+  parallel::stopCluster(cl)
+
+  #divide by the full matrix norm values
+  res_pres <- lapply(FL_j, function(x) {x/full_norm})
+  return(res_pres)
+}
+
 Perm_j_s_il <- function(j, Netw, k,p, p2 = NULL){
   #Netw = X'X - data matrix with taxa in columns and samples in rows
   #k - number of permutations used  
@@ -349,7 +379,9 @@ Perm_j_s_il <- function(j, Netw, k,p, p2 = NULL){
   FL_j <- sapply(labl,DiffFiltLoss_j, Netw = Netw, j=j)
   return(list(labl = labl, FL_j = FL_j))
 }
+```
 
+```{r}
 #we illustrate computation of the first k=6 permutations for each taxon
 p <- dim(X)[2] 
 Netw <- t(X)%*%X
