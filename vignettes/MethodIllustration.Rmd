@@ -12,8 +12,8 @@ output:
 vignette: >
   %\VignetteIndexEntry{Method Illustration}
   %\VignetteEncoding{UTF-8}  
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteDepends{kableExtra}
+  %\VignetteEngine{knitr::rmarkdown}
 editor_options:
   chunk_output_type: console
 ---
@@ -31,8 +31,6 @@ library(PERFect)
 library(ggplot2)
 library(knitr)
 library(kableExtra)
-
-source("C:/Users/CaoQ1/Documents/Codes/PERFect/perfect/R/utility_functions.R") #change me
 
 set.seed(12341)
 ```
@@ -316,6 +314,31 @@ $$
 The values of $DFL^*$ for other sets of taxa are calculated similarly. 
 
 ```{r}
+########################################
+#Function to calculate j^th DFL loss
+########################################
+DiffFiltLoss_j <- function(Perm_Order,Netw, j){
+  J_jp1 <-  Perm_Order[seq_len(j+1)]
+  #calculate corresponding norm ratios this is the value of the matrix ||
+  DFL <-  (2*t(Netw[J_jp1[max(NROW(J_jp1))],-J_jp1])%*%Netw[J_jp1[max(NROW(J_jp1))],-J_jp1]+
+             Netw[J_jp1[max(NROW(J_jp1))], J_jp1[max(NROW(J_jp1))]]^2)
+
+  return(DFL)
+}
+##################################
+#Randomly permute labels n times for a fixed j
+#################################
+Perm_j_s <- function(j, Netw, k,p, p2 = NULL){
+  #Netw = X'X - data matrix with taxa in columns and samples in rows
+  #k - number of permutations used
+  #create a list of k*p arrangements of orders
+  if(is.null(p2)){p2 <- p}
+  labl <- sapply(seq_len(k),function(x) NULL)
+  labl <- lapply(labl,function(x)  sample(seq_len(p),p2))
+  FL_j <- sapply(labl,DiffFiltLoss_j, Netw = Netw, j=j)
+  return(FL_j)
+}
+
 Perm_j_s_il <- function(j, Netw, k,p, p2 = NULL){
   #Netw = X'X - data matrix with taxa in columns and samples in rows
   #k - number of permutations used  
@@ -424,9 +447,9 @@ The  $\log(DFL)$ value for the $5^{th}$ taxon in simultaneous p-values ordering 
 
 ```{r}
 #all p-values
-    for(i in 1:(p-1)){
-      pvals[i] <- 1 - psn(x=log(DFL$DFL[i]), 
-                      xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3])}
+for(i in 1:(p-1)){
+pvals[i] <- 1 - psn(x=log(DFL$DFL[i]), 
+              xi = est[[i]][1], omega = est[[i]][2], alpha = est[[i]][3])}
 
 data <- rbind(c(NA, round(pvals,2)), data)
 rownames(data)[1] <- "Perm pvalues"
@@ -468,10 +491,10 @@ kable(data[1:4,14:20],
 The OTU table above indicates that the first significantly small averaged p-value is $p_{14}= 0.02 \leq 0.1 :=\alpha$, which occurs at the first signal taxon $S_6$. Thus the algorithm has successfully filtered noise taxa and preserved all the true signal taxa.  
 
 ```{r}
- #select taxa that are kept in the data set at significance level alpha
-   Ind <- min(which(pvals_avg <=0.1))
-   #if jth DFL is significant, then throw away all taxa 1:j 
-   filtX <- X[,-(1:Ind)]
+#select taxa that are kept in the data set at significance level alpha
+Ind <- min(which(pvals_avg <=0.1))
+#if jth DFL is significant, then throw away all taxa 1:j 
+filtX <- X[,-(1:Ind)]
    
 # kable(filtX, 
 #       format='html',
