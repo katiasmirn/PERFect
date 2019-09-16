@@ -350,10 +350,10 @@ TraditR1 <- function(X, thresh=5){
 #' Traditional Filtering Rule 2
 #'
 #' @description This rule is adopted from Milici et al. (2016) that removes taxa with low abundance level.
-#'  Specifically, it keeps taxa with abundance level higher than 0.001%.
-#'  Then it further selects taxa that satisfy at least one of the following conditions:  Present in at least one sample
-#'  at a relative abundance higher than 1% of the reads of that sample, present in at least 2% of samples at a relative
-#'  abundance higher than 0.1% for a given sample, present in at least 5% of samples at any abundance level.
+#'  Specifically, it keeps taxa with abundance level higher than 0.001\%. Then it further selects taxa that satisfy at least one of the following conditions:
+#'  Present in at least one sample at a relative abundance higher than 1\% of the reads of that sample,
+#'  present in at least 2\% of samples at a relative abundance higher than 0.1\% for a given sample,
+#'  present in at least 5\% of samples at any abundance level.
 #'
 #' @usage TraditR2(X, Ab_min = 0.001)
 #'
@@ -412,3 +412,4 @@ TraditR2 <- function(X, Ab_min = 0.001){
   filtX <- X[,Taxa]
   return(filtX)
 }
+
